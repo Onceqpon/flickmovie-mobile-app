@@ -21,12 +21,11 @@ function TabIcon({ focused, icon, title }: TabIconProps) {
     return (
       <ImageBackground
         source={images.btbackground}
-        className="flex flex-row w-full flex-1 min-w-[112px] min-h-[200px] mt-5 justify-center items-center rounded-full overflow-hidden"
+        className="flex flex-row w-full flex-1 min-w-[112px] min-h-[60px] mt-4 justify-center items-center rounded-full overflow-hidden"
       >
         <Image source={icon} tintColor="#151312" className="size-5" />
         <Text
-          className="text-secondary text-base font-semibold ml-2 text-white"
-        >
+          className="text-base font-semibold ml-2 text-white">
           {title}
         </Text>
       </ImageBackground>
@@ -34,76 +33,57 @@ function TabIcon({ focused, icon, title }: TabIconProps) {
   }
 
   return (
-    <View className="flex flex-row w-full flex-1 min-w-[112px] min-h-14 mt-5 justify-center items-center rounded-full overflow-hidden">
-      <Image source={icon} tintColor="#A8B5DB" className="size-7" />
+    <View className="size-full justify-center items-center mt-4 rounded-full">
+      <Image source={icon} tintColor="#A8B5DB" className="size-5" />
     </View>
   );
 }
+
+const tabScreens = [
+  { name: "index", title: "Home", icon: icons.home },
+  { name: "movies", title: "Movies", icon: icons.clapperboard },
+  { name: "tvseries", title: "TV/Series", icon: icons.screen },
+  { name: "profile", title: "Profile", icon: icons.user },
+];
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        // ... Twoje obecne screenOptions
         tabBarShowLabel: false,
         tabBarItemStyle: {
+          width: "100%",
           height: "100%",
           justifyContent: "center",
           alignItems: "center",
         },
-        tabBarStyle: {
-          backgroundColor: "#0F0D23",
+          tabBarStyle: {
+          backgroundColor: "#000c1c",
           borderRadius: 50,
-          marginHorizontal: 15,
-          marginBottom: 40,
-          height: 60,
+          marginHorizontal: 20,
+          marginBottom: 36,
+          height: 52,
           position: "absolute",
           overflow: "hidden",
+          borderWidth: 1,
+          borderColor: "#0F0D23",
         },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Index",
-          headerShown: false,
-          tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.home} title="Home" />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: "Search",
-          headerShown: false,
-          tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.search} title="Search" />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="saved"
-        options={{
-          title: "Saved",
-          headerShown: false,
-          tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.save} title="Saved" />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          headerShown: false,
-          tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.user} title="Profile" />
-          ),
-        }}
-      />
+      {tabScreens.map((screen) => (
+        <Tabs.Screen
+          key={screen.name}
+          name={screen.name}
+          options={{
+            title: screen.title,
+            headerShown: false,
+            tabBarIcon: ({ focused }) => (
+              <TabIcon focused={focused} icon={screen.icon} title={screen.title} />
+            ),
+          }}
+        />
+      ))}
     </Tabs>
   );
 }
