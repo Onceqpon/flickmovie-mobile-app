@@ -19,7 +19,6 @@ interface Movie extends BaseMovie {
 }
 
 interface TrendingMovie {
-  searchTerm: string;
   movie_id: number;
   title: string;
   count: number;

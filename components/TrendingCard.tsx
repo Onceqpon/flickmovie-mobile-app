@@ -24,7 +24,7 @@ const TrendingCard = ({
             }
           >
             <Image
-              source={images.mainbg}
+              source={images.btbackground}
               className="size-14"
               resizeMode="cover"
             />
@@ -32,7 +32,7 @@ const TrendingCard = ({
         </View>
 
         <Text
-          className="text-sm font-bold mt-2 text-light-200"
+          className="text-sm font-bold mt-2 text-white"
           numberOfLines={2}
         >
           {title}

@@ -14,7 +14,7 @@ const database = new Databases(client);
 export const updateSearchCount = async (query: string, movie: Movie) => {
   try {
     const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
-      Query.equal("searchTerm", query),
+      Query.equal("movie_id", movie.id),
     ]);
 
     if (result.documents.length > 0) {
@@ -29,7 +29,6 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
       );
     } else {
       await database.createDocument(DATABASE_ID, COLLECTION_ID, ID.unique(), {
-        searchTerm: query,
         movie_id: movie.id,
         title: movie.title,
         count: 1,
@@ -49,14 +48,12 @@ export const getTrendingMovies = async (): Promise<TrendingMovie[]> => {
       Query.orderDesc("count"),
     ]);
 
-    return result.documents.map(doc => ({
-      searchTerm: doc.searchTerm,
+    return result.documents.map((doc) => ({
       movie_id: doc.movie_id,
       title: doc.title,
       count: doc.count,
       poster_url: doc.poster_url,
     })) as TrendingMovie[];
-
   } catch (error) {
     console.error(error);
     throw error;

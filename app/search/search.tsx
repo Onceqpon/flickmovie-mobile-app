@@ -38,12 +38,8 @@ const Search = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, loadMovies, reset]);
 
-  useEffect(() => {
-    if (Array.isArray(movies) && !loading && !error && movies.length > 0 && searchQuery.trim()) {
-      const firstMovie = movies[0];
-      updateSearchCount(searchQuery, firstMovie);
-    }
-  }, [movies, searchQuery, loading, error]);
+  // Usunięto useEffect, który automatycznie zapisywał wyniki do Appwrite.
+  // Teraz zapis odbywa się przy kliknięciu w kartę filmu.
 
   return (
     <View className="flex-1 bg-primary">
@@ -57,7 +53,12 @@ const Search = () => {
         className="px-5"
         data={movies as Movie[]}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <MovieDisplayCard {...item} />}
+        renderItem={({ item }) => (
+          <MovieDisplayCard
+            {...item}
+            onPress={() => updateSearchCount(searchQuery, item)}
+          />
+        )}
         numColumns={3}
         columnWrapperStyle={{
           justifyContent: "flex-start",
@@ -68,7 +69,11 @@ const Search = () => {
         ListHeaderComponent={
           <>
             <View className="w-full flex-row justify-center mt-20 items-center">
-              <Image source={icons.logo} className="w-12 h-10" />
+                <Image 
+                    source={icons.logo} 
+                    className="w-[250px] h-[100px] mt-10 mx-auto"
+                    resizeMode="contain" 
+                />
             </View>
 
             <View className="my-5">
@@ -96,7 +101,7 @@ const Search = () => {
             {!loading &&
               !error &&
               searchQuery.trim() &&
-              Array.isArray(movies) && 
+              Array.isArray(movies) &&
               movies.length > 0 && (
                 <Text className="text-xl text-white font-bold">
                   Search Results for{" "}
