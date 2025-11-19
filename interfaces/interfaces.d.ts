@@ -1,18 +1,21 @@
-interface Movie {
+interface BaseMovie {
   id: number;
   title: string;
   adult: boolean;
-  backdrop_path: string;
-  genre_ids: number[];
   original_language: string;
   original_title: string;
   overview: string;
   popularity: number;
-  poster_path: string;
   release_date: string;
   video: boolean;
   vote_average: number;
   vote_count: number;
+  backdrop_path: string | null;
+  poster_path: string | null;
+}
+
+interface Movie extends BaseMovie {
+  genre_ids: number[];
 }
 
 interface TrendingMovie {
@@ -23,9 +26,7 @@ interface TrendingMovie {
   poster_url: string;
 }
 
-interface MovieDetails {
-  adult: boolean;
-  backdrop_path: string | null;
+interface MovieDetails extends BaseMovie {
   belongs_to_collection: {
     id: number;
     name: string;
@@ -38,13 +39,7 @@ interface MovieDetails {
     name: string;
   }[];
   homepage: string | null;
-  id: number;
   imdb_id: string | null;
-  original_language: string;
-  original_title: string;
-  overview: string | null;
-  popularity: number;
-  poster_path: string | null;
   production_companies: {
     id: number;
     logo_path: string | null;
@@ -55,7 +50,6 @@ interface MovieDetails {
     iso_3166_1: string;
     name: string;
   }[];
-  release_date: string;
   revenue: number;
   runtime: number | null;
   spoken_languages: {
@@ -65,10 +59,6 @@ interface MovieDetails {
   }[];
   status: string;
   tagline: string | null;
-  title: string;
-  video: boolean;
-  vote_average: number;
-  vote_count: number;
 }
 
 interface TrendingCardProps {

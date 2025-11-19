@@ -1,14 +1,179 @@
-import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const MovieDetails = () => {
-  return (
-    <View>
-      <Text>[id]</Text>
-    </View>
-  )
+import { icons } from "@/constants/icons";
+import { fetchMovieDetails } from "@/services/tmdbapi";
+import useLoadData from "@/services/useloaddata";
+
+const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+
+interface MovieInfoProps {
+  label: string;
+  value?: string | number | null;
 }
 
-export default MovieDetails
+const MovieInfo = ({ label, value }: MovieInfoProps) => (
+  <View className="flex-col items-start justify-center mt-5">
+    <Text className="text-light-200 font-normal text-sm">{label}</Text>
+    <Text className="text-light-100 font-bold text-sm mt-2">
+      {value || "N/A"}
+    </Text>
+  </View>
+);
 
-const styles = StyleSheet.create({})
+const formatCurrency = (amount: number | undefined): string => {
+  if (!amount || amount === 0) return "N/A";
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const Details = () => {
+  const router = useRouter();
+  const { id } = useLocalSearchParams();
+
+  const movieId = Array.isArray(id) ? id[0] : (id as string | undefined);
+  const shouldFetch = !!movieId;
+
+  const { data: movie, loading, error } = useLoadData<MovieDetails>(
+    () => fetchMovieDetails(movieId!),
+    shouldFetch
+  );
+
+  if (!movieId) {
+    return (
+      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
+        <Text className="text-white text-lg">Brak ID filmu.</Text>
+        <TouchableOpacity onPress={router.back}>
+          <Text className="text-accent mt-4">Wróć</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (loading)
+    return (
+      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#FF8C00" />
+      </SafeAreaView>
+    );
+    
+  if (error) {
+    return (
+      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
+        <Text className="text-red-500 text-lg">Błąd ładowania: {error.message}</Text>
+        <TouchableOpacity onPress={router.back}>
+          <Text className="text-accent mt-4">Wróć</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (!movie) {
+    return (
+      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
+        <Text className="text-white text-lg">Film nie został znaleziony.</Text>
+        <TouchableOpacity onPress={router.back}>
+          <Text className="text-accent mt-4">Wróć</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <View className="bg-primary flex-1">
+      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
+        <View>
+          <Image
+            source={{
+              uri: `${TMDB_IMAGE_BASE_URL}${movie.poster_path}`,
+            }}
+            className="w-full h-[550px]"
+            resizeMode="stretch"
+          />
+
+          <TouchableOpacity className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center">
+            <Image
+              source={icons.play}
+              className="w-6 h-7 ml-1"
+              resizeMode="stretch"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-col items-start justify-center mt-5 px-5">
+          <Text className="text-white font-bold text-xl">{movie.title}</Text>
+          <View className="flex-row items-center gap-x-1 mt-2">
+            <Text className="text-light-200 text-sm">
+              {movie.release_date?.split("-")[0]} •
+            </Text>
+            <Text className="text-light-200 text-sm">{movie.runtime}m</Text>
+          </View>
+
+          <View className="flex-row items-center bg-dark-100 px-2 py-1 rounded-md gap-x-1 mt-2">
+            <Image source={icons.star} className="size-4" />
+
+            <Text className="text-white font-bold text-sm">
+              {Math.round(movie.vote_average ?? 0)}/10
+            </Text>
+
+            <Text className="text-light-200 text-sm">
+              ({movie.vote_count} votes)
+            </Text>
+          </View>
+
+          <MovieInfo label="Overview" value={movie.overview} />
+          <MovieInfo
+            label="Genres"
+            value={movie.genres?.map((g) => g.name).join(" • ") || "N/A"}
+          />
+
+          <View className="flex flex-row justify-between w-full">
+            <MovieInfo
+              label="Budget"
+              value={formatCurrency(movie.budget)}
+            />
+            <MovieInfo
+              label="Revenue"
+              value={formatCurrency(movie.revenue)}
+            />
+          </View>
+
+          <MovieInfo
+            label="Production Companies"
+            value={
+              movie.production_companies?.map((c) => c.name).join(" • ") ||
+              "N/A"
+            }
+          />
+        </View>
+      </ScrollView>
+
+      <TouchableOpacity
+        className="absolute bottom-5 left-0 right-0 mx-5 bg-accent rounded-lg py-3.5 flex flex-row items-center justify-center z-50"
+        onPress={router.back}
+      >
+        <Image
+          source={icons.left_arrow}
+          className="size-5 mr-1 mt-0.5 rotate-180"
+          tintColor="#fff"
+        />
+        <Text className="text-white font-semibold text-base">Go Back</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+export default Details;
