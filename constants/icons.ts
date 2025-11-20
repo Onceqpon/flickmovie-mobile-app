@@ -1,3 +1,4 @@
+import angle_left from "@/assets/icons/angle-left.png";
 import left_arrow from "@/assets/icons/arrowleft.png";
 import save from "@/assets/icons/bookmark.png";
 import clapperboard from "@/assets/icons/clapperboard.png";
@@ -20,4 +21,5 @@ export const icons = {
   left_arrow,
   star,
   logo,
+  angle_left,
 };

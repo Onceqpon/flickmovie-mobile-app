@@ -22,8 +22,8 @@ interface MovieInfoProps {
 
 const MovieInfo = ({ label, value }: MovieInfoProps) => (
   <View className="flex-col items-start justify-center mt-5">
-    <Text className="text-light-200 font-normal text-sm">{label}</Text>
-    <Text className="text-light-100 font-bold text-sm mt-2">
+    <Text className="text-white font-normal text-sm">{label}</Text>
+    <Text className="text-white font-bold text-sm mt-2">
       {value || "N/A"}
     </Text>
   </View>
@@ -47,9 +47,11 @@ const Details = () => {
   const movieId = Array.isArray(id) ? id[0] : (id as string | undefined);
   const shouldFetch = !!movieId;
 
+
   const { data: movie, loading, error } = useLoadData<MovieDetails>(
-    () => fetchMovieDetails(movieId!),
-    shouldFetch
+    () => fetchMovieDetails(movieId!), 
+    [movieId],  
+    shouldFetch 
   );
 
   if (!movieId) {
@@ -93,7 +95,7 @@ const Details = () => {
   }
 
   return (
-    <View className="bg-primary flex-1">
+    <View className="bg-movie-card-bg flex-1">
       <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
         <View>
           <Image
@@ -116,20 +118,20 @@ const Details = () => {
         <View className="flex-col items-start justify-center mt-5 px-5">
           <Text className="text-white font-bold text-xl">{movie.title}</Text>
           <View className="flex-row items-center gap-x-1 mt-2">
-            <Text className="text-light-200 text-sm">
+            <Text className="text-white text-sm">
               {movie.release_date?.split("-")[0]} •
             </Text>
-            <Text className="text-light-200 text-sm">{movie.runtime}m</Text>
+            <Text className="text-white text-sm">{movie.runtime}m</Text>
           </View>
 
-          <View className="flex-row items-center bg-dark-100 px-2 py-1 rounded-md gap-x-1 mt-2">
-            <Image source={icons.star} className="size-4" />
+          <View className="flex-row items-center bg-star-bg px-2 py-1 rounded-md gap-x-1 mt-2">
+            <Image source={icons.star} className="size-4" tintColor="#FFD700" />
 
             <Text className="text-white font-bold text-sm">
               {Math.round(movie.vote_average ?? 0)}/10
             </Text>
 
-            <Text className="text-light-200 text-sm">
+            <Text className="text-white text-sm">
               ({movie.vote_count} votes)
             </Text>
           </View>
@@ -162,12 +164,12 @@ const Details = () => {
       </ScrollView>
 
       <TouchableOpacity
-        className="absolute bottom-5 left-0 right-0 mx-5 bg-accent rounded-lg py-3.5 flex flex-row items-center justify-center z-50"
+        className="absolute top-5 left-5 mt-5 px-5 bg-star-bg rounded-lg py-3.5 flex flex-row items-center justify-center z-50"
         onPress={router.back}
       >
         <Image
-          source={icons.left_arrow}
-          className="size-5 mr-1 mt-0.5 rotate-180"
+          source={icons.angle_left}
+          className="size-5 mr-1 mt-0.5"
           tintColor="#fff"
         />
         <Text className="text-white font-semibold text-base">Go Back</Text>

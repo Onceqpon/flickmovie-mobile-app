@@ -1,19 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 
-const useLoadData = <T>(fetchFunction: () => Promise<T>, autoFetch = true) => {
+const useLoadData = <T>(
+  fetchFunction: () => Promise<T>,
+  dependencies: any[] = [],
+  autoFetch = true
+) => {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchData = useCallback(async () => {
     let isMounted = true;
-    
+
     try {
       setLoading(true);
       setError(null);
 
       const result = await fetchFunction();
-      
+
       if (isMounted) {
         setData(result);
       }
@@ -30,9 +34,10 @@ const useLoadData = <T>(fetchFunction: () => Promise<T>, autoFetch = true) => {
     }
 
     return () => {
-        isMounted = false;
+      isMounted = false;
     };
-  }, [fetchFunction]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, dependencies);
 
   const reset = useCallback(() => {
     setData(null);

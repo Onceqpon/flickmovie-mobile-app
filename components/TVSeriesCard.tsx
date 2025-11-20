@@ -3,31 +3,38 @@ import { Image, Text, TouchableOpacity, View } from "react-native";
 
 import { icons } from "@/constants/icons";
 
-interface MovieCardProps extends Movie {
+interface TVSeriesCardProps {
+  id: number;
+  poster_path: string | null; 
+  name: string;
+  vote_average: number;
+  first_air_date: string;
   onPress?: () => void;
   className?: string;
 }
 
-const MovieCard = ({
+const TVSeriesCard = ({
   id,
   poster_path,
-  title,
+  name,
   vote_average,
-  release_date,
+  first_air_date,
   onPress,
-  className, // <--- Odbieramy prop
-}: MovieCardProps) => {
+  className,
+}: TVSeriesCardProps) => {
   const router = useRouter();
 
   const handlePress = () => {
     if (onPress) {
       onPress();
+      return;
     }
-    router.push(`/movies/${id}`);
+    // ZMIANA: Ścieżka prowadzi teraz do folderu "tvseries"
+    // Upewnij się, że utworzysz plik app/tvseries/[id].tsx
+    router.push(`/tvseries/${id}`);
   };
 
   return (
-
     <TouchableOpacity 
         onPress={handlePress} 
         className={`rounded-lg ${className || ""}`}
@@ -43,14 +50,14 @@ const MovieCard = ({
       />
 
       <Text className="text-sm font-bold text-white mt-2" numberOfLines={1}>
-        {title}
+        {name} 
       </Text>
 
       <View className="flex-row items-center justify-start gap-x-1">
         <Image 
-        source={icons.star} 
-        className="size-4" 
-        tintColor="#FFD700"
+          source={icons.star} 
+          className="size-4" 
+          tintColor="#FFD700"
         />
         <Text className="text-xs text-white font-bold uppercase">
           {(vote_average / 2).toFixed(1)}
@@ -59,14 +66,15 @@ const MovieCard = ({
 
       <View className="flex-row items-center justify-between">
         <Text className="text-xs text-white font-medium mt-1">
-          {release_date ? release_date.split("-")[0] : "N/A"}
+          {first_air_date ? first_air_date.split("-")[0] : "N/A"}
         </Text>
+        
         <Text className="text-xs font-medium text-white uppercase">
-          Movie
+          TV Series
         </Text>
       </View>
     </TouchableOpacity>
   );
 };
 
-export default MovieCard;
+export default TVSeriesCard;

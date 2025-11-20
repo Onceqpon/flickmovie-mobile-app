@@ -4,7 +4,7 @@ import { Image, Text, TouchableOpacity, View } from "react-native";
 
 import { images } from "@/constants/images";
 
-const TrendingCard = ({
+const TrendingMovieCard = ({
   movie: { movie_id, title, poster_url },
   index,
 }: TrendingCardProps) => {
@@ -42,4 +42,4 @@ const TrendingCard = ({
   );
 };
 
-export default TrendingCard;
+export default TrendingMovieCard;

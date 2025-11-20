@@ -14,6 +14,22 @@ interface BaseMovie {
   poster_path: string | null;
 }
 
+interface TVSeries {
+  id: number;
+  name: string;             
+  original_name: string;    
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  popularity: number;
+  vote_average: number;
+  vote_count: number;
+  first_air_date: string;   
+  genre_ids: number[];
+  origin_country: string[];
+  original_language: string;
+}
+
 interface Movie extends BaseMovie {
   genre_ids: number[];
 }
@@ -23,6 +39,74 @@ interface TrendingMovie {
   title: string;
   count: number;
   poster_url: string;
+}
+interface TVSeriesDetails extends TVSeries {
+  created_by: {
+    id: number;
+    name: string;
+    profile_path: string | null;
+  }[];
+  episode_run_time: number[];
+  genres: {
+    id: number;
+    name: string;
+  }[];
+  homepage: string;
+  in_production: boolean;
+  languages: string[];
+  last_air_date: string;
+  networks: {
+    name: string;
+    id: number;
+    logo_path: string | null;
+    origin_country: string;
+  }[];
+  number_of_episodes: number;
+  number_of_seasons: number;
+  production_companies: {
+    id: number;
+    logo_path: string | null;
+    name: string;
+    origin_country: string;
+  }[];
+  status: string;
+  tagline: string;
+  seasons: {
+    air_date: string;
+    episode_count: number;
+    id: number;
+    name: string;
+    overview: string;
+    poster_path: string | null;
+    season_number: number;
+    vote_average: number;
+  }[];
+}
+
+interface SeasonDetails {
+  _id: string;
+  air_date: string;
+  episodes: Episode[]; // To jest to, czego potrzebujemy
+  name: string;
+  overview: string;
+  id: number;
+  poster_path: string | null;
+  season_number: number;
+}
+
+interface Episode {
+  air_date: string;
+  episode_number: number;
+  id: number;
+  name: string;
+  overview: string;
+  production_code: string;
+  runtime: number;
+  season_number: number;
+  show_id: number;
+  still_path: string | null;
+  vote_average: number;
+  vote_count: number;
 }
 
 interface MovieDetails extends BaseMovie {
@@ -60,7 +144,16 @@ interface MovieDetails extends BaseMovie {
   tagline: string | null;
 }
 
+
+
 interface TrendingCardProps {
   movie: TrendingMovie;
   index: number;
+}
+
+interface TrendingSeries {
+  series_id: number;
+  name: string;
+  count: number;
+  poster_url: string;
 }

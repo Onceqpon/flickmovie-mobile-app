@@ -8,8 +8,9 @@ import {
   View,
 } from "react-native";
 
-import { getTrendingMovies } from "@/services/appwriteapi";
-import { fetchMovies } from "@/services/tmdbapi";
+// DODANO: getTrendingSeries
+import { getTrendingMovies, getTrendingSeries } from "@/services/appwriteapi";
+import { fetchMovies, fetchTVSeries, SORT_OPTIONS } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
 
 import { icons } from "@/constants/icons";
@@ -17,23 +18,109 @@ import { images } from "@/constants/images";
 
 import MovieCard from "@/components/MovieCard";
 import SearchBar from "@/components/SearchBar";
-import TrendingCard from "@/components/TrendingCard";
+// Używamy TrendingCard dla filmów (chyba że zmieniłeś nazwę pliku na TrendingMovieCard)
+import TrendingCard from "@/components/TrendingMovieCard";
+import TrendingSeriesCard from "@/components/TrendingTVSeriesCard";
+import TVSeriesCard from "@/components/TVSeriesCard";
 
+// --- SMART COMPONENT: MOVIE SECTION ---
+interface SectionProps {
+  title: string;
+  sortBy?: string;
+}
 
+const MovieSection = ({ title, sortBy }: SectionProps) => {
+  const { data, loading, error } = useLoadData(
+    () => fetchMovies({ sortBy }), 
+    []
+  );
+
+  if (loading) {
+    return (
+      <View className="mt-10 h-[200px] justify-center items-center">
+        <ActivityIndicator size="small" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (error || !data || data.length === 0) return null;
+
+  return (
+    <View className="mt-10">
+      <Text className="text-lg text-white font-bold mb-3">{title}</Text>
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="mb-4 mt-3"
+        data={data}
+        contentContainerStyle={{
+          gap: 20,
+          paddingRight: 20,
+        }}
+        renderItem={({ item }) => (
+          <MovieCard {...item} className="w-[140px]" />
+        )}
+        keyExtractor={(item) => item.id.toString()}
+      />
+    </View>
+  );
+};
+
+// --- SMART COMPONENT: SERIES SECTION ---
+const SeriesSection = ({ title, sortBy }: SectionProps) => {
+  const { data, loading, error } = useLoadData(
+    () => fetchTVSeries({ sortBy }), 
+    []
+  );
+
+  if (loading) {
+    return (
+      <View className="mt-10 h-[200px] justify-center items-center">
+        <ActivityIndicator size="small" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (error || !data || data.length === 0) return null;
+
+  return (
+    <View className="mt-10">
+      <Text className="text-lg text-white font-bold mb-3">{title}</Text>
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="mb-4 mt-3"
+        data={data}
+        contentContainerStyle={{
+          gap: 20,
+          paddingRight: 20,
+        }}
+        renderItem={({ item }) => (
+          <TVSeriesCard {...item} className="w-[140px]" />
+        )}
+        keyExtractor={(item) => item.id.toString()}
+      />
+    </View>
+  );
+};
+
+// --- GŁÓWNY WIDOK ---
 const Index = () => {
   const router = useRouter();
 
+  // 1. Trendy Filmów
   const {
     data: trendingMovies,
     loading: trendingLoading,
     error: trendingError,
-  } = useLoadData(getTrendingMovies);
+  } = useLoadData(getTrendingMovies, []);
 
+  // 2. Trendy Seriali (TO BYŁO BRAKUJĄCE W TWOIM KODZIE)
   const {
-    data: movies,
-    loading: moviesLoading,
-    error: moviesError,
-  } = useLoadData(() => fetchMovies({ query: "" }));
+    data: trendingSeries,
+    loading: trendingSeriesLoading,
+    error: trendingSeriesError,
+  } = useLoadData(getTrendingSeries, []);
 
   return (
     <View className="flex-1 bg-primary">
@@ -46,75 +133,90 @@ const Index = () => {
       <ScrollView
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ minHeight: "100%", paddingBottom: 10 }}
+        contentContainerStyle={{ minHeight: "100%", paddingBottom: 100 }}
       >
-        <Image 
-          source={icons.logo} 
+        <Image
+          source={icons.logo}
           className="w-[250px] h-[100px] mt-10 mx-auto"
-          resizeMode="contain" 
+          resizeMode="contain"
         />
 
-        {moviesLoading || trendingLoading ? (
-          <ActivityIndicator
-            size="large"
-            color="#0000ff"
-            className="mt-10 self-center"
-          />
-        ) : moviesError || trendingError ? (
-          <Text>Error: {moviesError?.message || trendingError?.message}</Text>
-        ) : (
-          <View className="flex-1 mt-5">
+        <View className="flex-1 mt-5">
             <SearchBar
               onPress={() => {
                 router.push("/search/search");
               }}
-              placeholder="Search for a movie"
+              placeholder="Search for a movie or series"
             />
 
-            {trendingMovies && (
-              <View className="mt-10">
-                <Text className="text-lg text-white font-bold mb-3">
-                  Trending Movies
-                </Text>
-                <FlatList
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  className="mb-4 mt-3"
-                  data={trendingMovies}
-                  contentContainerStyle={{
-                    gap: 26,
-                  }}
-                  renderItem={({ item, index }) => (
-                    <TrendingCard movie={item} index={index} />
-                  )}
-                  keyExtractor={(item) => item.movie_id.toString()}
-                  ItemSeparatorComponent={() => <View className="w-4" />}
-                />
-              </View>
+            {/* --- SEKCJA TRENDÓW FILMÓW (APPWRITE) --- */}
+            {trendingLoading ? (
+               <ActivityIndicator size="large" color="#0000ff" className="mt-10" />
+            ) : trendingError ? (
+               <Text className="text-red-500 mt-5">Error loading trends</Text>
+            ) : (
+               trendingMovies && trendingMovies.length > 0 && (
+                <View className="mt-10">
+                  <Text className="text-lg text-white font-bold mb-3">
+                    Trending Movies
+                  </Text>
+                  <FlatList
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    className="mb-4 mt-3"
+                    data={trendingMovies}
+                    contentContainerStyle={{ gap: 26 }}
+                    renderItem={({ item, index }) => (
+                      <TrendingCard movie={item} index={index} />
+                    )}
+                    keyExtractor={(item) => item.movie_id.toString()}
+                  />
+                </View>
+              )
             )}
 
-            <>
-              <Text className="text-lg text-white font-bold mt-5 mb-3">
-                Latest Movies
-              </Text>
+            {/* --- SEKCJA TRENDÓW SERIALI (APPWRITE) --- */}
+            {trendingSeriesLoading ? (
+              <ActivityIndicator size="large" color="#0000ff" className="mt-10" />
+            ) : trendingSeriesError ? (
+              <Text className="text-red-500 mt-5">Error loading series trends</Text>
+            ) : (
+              trendingSeries && trendingSeries.length > 0 && (
+                <View className="mt-10">
+                  <Text className="text-lg text-white font-bold mb-3">
+                    Trending Series
+                  </Text>
+                  <FlatList
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    className="mb-4 mt-3"
+                    data={trendingSeries}
+                    contentContainerStyle={{ gap: 26 }}
+                    renderItem={({ item, index }) => (
+                      <TrendingSeriesCard series={item} index={index} />
+                    )}
+                    keyExtractor={(item) => item.series_id.toString()}
+                  />
+                </View>
+              )
+            )}
 
-              <FlatList
-                data={movies}
-                renderItem={({ item }) => <MovieCard {...item} />}
-                keyExtractor={(item) => item.id.toString()}
-                numColumns={3}
-                columnWrapperStyle={{
-                  justifyContent: "flex-start",
-                  gap: 20,
-                  paddingRight: 5,
-                  marginBottom: 10,
-                }}
-                className="mt-2 pb-32"
-                scrollEnabled={false}
-              />
-            </>
+            {/* --- MIESZANE SEKCJE (TMDB) --- */}
+            <MovieSection title="Latest Movies" /> 
+            <SeriesSection title="New TV Series Episodes" sortBy={SORT_OPTIONS.NEWEST} />
+            
+            <MovieSection title="Popular Movies" sortBy={SORT_OPTIONS.POPULARITY} />
+            <SeriesSection title="Popular TV Series" sortBy={SORT_OPTIONS.POPULARITY} />
+            
+            <MovieSection title="Top Rated Movies" sortBy={SORT_OPTIONS.TOP_RATED} />
+            <SeriesSection title="Top Rated TV Series" sortBy={SORT_OPTIONS.TOP_RATED} />
+            
+            <MovieSection title="Highest Revenue Movies" sortBy={SORT_OPTIONS.REVENUE} />
+            
+            <MovieSection title="Most Voted Movies" sortBy={SORT_OPTIONS.MOST_VOTED} />
+            <SeriesSection title="Most Voted TV Series" sortBy={SORT_OPTIONS.MOST_VOTED} />
+            
           </View>
-        )}
       </ScrollView>
     </View>
   );
