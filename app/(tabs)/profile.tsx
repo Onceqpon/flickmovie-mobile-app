@@ -37,7 +37,7 @@ const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, 
 
 const Profile = () => {
   const { user, setIsLogged, setUser } = useGlobalContext();
-  const [watchlistCount, setWatchlistCount] = useState(0); // Nowy stan dla licznika
+  const [watchlistCount, setWatchlistCount] = useState(0);
 
   const logout = async () => {
     try {

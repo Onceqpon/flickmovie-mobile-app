@@ -157,3 +157,15 @@ interface TrendingSeries {
   count: number;
   poster_url: string;
 }
+
+interface ReviewDocument {
+  $id: string;
+  movie_id?: number;
+  series_id?: number;
+  user_id: string;
+  username: string;
+  avatar_url: string;
+  rating: number;
+  content: string;
+  $createdAt: string;
+}

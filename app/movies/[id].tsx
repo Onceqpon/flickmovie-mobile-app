@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import Reviews from "@/components/Reviews";
 import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
 import { fetchMovieDetails } from "@/services/tmdbapi";
@@ -165,6 +166,7 @@ const Details = () => {
             }
           />
         </View>
+        <Reviews movieId={Number(id)} />
       </ScrollView>
 
       <TouchableOpacity

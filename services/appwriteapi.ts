@@ -7,6 +7,7 @@ const MOVIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_COLLECTION_ID!;
 const SERIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_SERIES_COLLECTION_ID!;
 const WATCHLIST_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WATCHLIST_COLLECTION_ID!;
 const WATCHLIST_SERIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WATCHLIST_SERIES_COLLECTION_ID!;
+const REVIEWS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID!;
 
 const STORAGE_ID = process.env.EXPO_PUBLIC_APPWRITE_STORAGE_ID!;
 const ENDPOINT = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!;
@@ -405,5 +406,91 @@ export const getWatchlistSeriesCount = async (userId: string) => {
   } catch (error) {
     console.error("Error fetching watchlist series count:", error);
     return 0;
+  }
+};
+
+export const getReviews = async (id: number, type: "movie" | "series") => {
+  const attribute = type === "movie" ? "movie_id" : "series_id";
+  
+  try {
+    const result = await database.listDocuments(
+      USERS_DATABASE_ID,
+      REVIEWS_COLLECTION_ID,
+      [Query.equal(attribute, id), Query.orderDesc("$createdAt")]
+    );
+    
+    return result.documents.map((doc) => ({
+      $id: doc.$id,
+      movie_id: doc.movie_id,
+      series_id: doc.series_id,
+      user_id: doc.user_id,
+      username: doc.username,
+      avatar_url: doc.avatar_url,
+      rating: doc.rating,
+      content: doc.content,
+      $createdAt: doc.$createdAt,
+    })) as ReviewDocument[];
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};
+
+export const createReview = async (
+  id: number,
+  type: "movie" | "series",
+  userId: string,
+  username: string,
+  avatarUrl: string,
+  rating: number,
+  content: string
+) => {
+  try {
+    const result = await database.createDocument(
+      USERS_DATABASE_ID,
+      REVIEWS_COLLECTION_ID,
+      ID.unique(),
+      {
+        movie_id: type === "movie" ? id : null,
+        series_id: type === "series" ? id : null,
+        user_id: userId,
+        username: username,
+        avatar_url: avatarUrl,
+        rating: rating,
+        content: content,
+      }
+    );
+    return result;
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};
+
+export const updateReview = async (reviewId: string, rating: number, content: string) => {
+  try {
+    const result = await database.updateDocument(
+      USERS_DATABASE_ID,
+      REVIEWS_COLLECTION_ID,
+      reviewId,
+      {
+        rating: rating,
+        content: content,
+      }
+    );
+    return result;
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};
+
+export const deleteReview = async (reviewId: string) => {
+  try {
+    await database.deleteDocument(
+      USERS_DATABASE_ID,
+      REVIEWS_COLLECTION_ID,
+      reviewId
+    );
+    return true;
+  } catch (error: any) {
+    throw new Error(error.message);
   }
 };
