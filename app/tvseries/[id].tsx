@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
 import { fetchSeasonDetails, fetchTVSeriesDetails } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
@@ -66,7 +67,7 @@ const Details = () => {
       } else {
         setEpisodes([]);
       }
-    } catch (err) {
+    } catch (error) {
       setEpisodes([]);
     } finally {
       setEpisodesLoading(false);
@@ -125,13 +126,17 @@ const Details = () => {
             resizeMode="stretch"
           />
 
-          <TouchableOpacity className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center">
-            <Image
-              source={icons.play}
-              className="w-6 h-7 ml-1"
-              resizeMode="stretch"
+          <View className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center">
+            <WatchlistButton 
+              item={{
+                id: series.id,
+                name: series.name, // Seriale mają 'name' zamiast 'title'
+                poster_path: series.poster_path || "",
+                vote_average: series.vote_average || 0
+              }} 
+              type="series"
             />
-          </TouchableOpacity>
+          </View>
         </View>
 
         <View className="flex-col items-start justify-center mt-5 px-5">
@@ -279,15 +284,15 @@ const Details = () => {
       </ScrollView>
 
       <TouchableOpacity
-        className="absolute top-5 left-5 mt-5 px-5 bg-star-bg rounded-lg py-3.5 flex flex-row items-center justify-center z-50"
+        className="absolute top-12 left-5 bg-white rounded-full p-2 z-50 backdrop-blur-lg"
         onPress={router.back}
       >
         <Image
           source={icons.angle_left}
-          className="size-5 mr-1 mt-0.5"
-          tintColor="#fff"
+          className="size-6"
+          resizeMode="contain"
+          tintColor="#000000"
         />
-        <Text className="text-white font-semibold text-base">Go Back</Text>
       </TouchableOpacity>
     </View>
   );

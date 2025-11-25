@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
 import { fetchMovieDetails } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
@@ -47,7 +48,6 @@ const Details = () => {
   const movieId = Array.isArray(id) ? id[0] : (id as string | undefined);
   const shouldFetch = !!movieId;
 
-
   const { data: movie, loading, error } = useLoadData<MovieDetails>(
     () => fetchMovieDetails(movieId!), 
     [movieId],  
@@ -57,9 +57,9 @@ const Details = () => {
   if (!movieId) {
     return (
       <SafeAreaView className="bg-primary flex-1 justify-center items-center">
-        <Text className="text-white text-lg">Brak ID filmu.</Text>
+        <Text className="text-white text-lg">No movie ID provided.</Text>
         <TouchableOpacity onPress={router.back}>
-          <Text className="text-accent mt-4">Wróć</Text>
+          <Text className="text-secondary mt-4">Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -68,16 +68,16 @@ const Details = () => {
   if (loading)
     return (
       <SafeAreaView className="bg-primary flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#FF8C00" />
+        <ActivityIndicator size="large" color="#FF9C01" />
       </SafeAreaView>
     );
     
   if (error) {
     return (
       <SafeAreaView className="bg-primary flex-1 justify-center items-center">
-        <Text className="text-red-500 text-lg">Błąd ładowania: {error.message}</Text>
+        <Text className="text-red-500 text-lg">Error loading details: {error.message}</Text>
         <TouchableOpacity onPress={router.back}>
-          <Text className="text-accent mt-4">Wróć</Text>
+          <Text className="text-secondary mt-4">Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -86,16 +86,16 @@ const Details = () => {
   if (!movie) {
     return (
       <SafeAreaView className="bg-primary flex-1 justify-center items-center">
-        <Text className="text-white text-lg">Film nie został znaleziony.</Text>
+        <Text className="text-white text-lg">Movie not found.</Text>
         <TouchableOpacity onPress={router.back}>
-          <Text className="text-accent mt-4">Wróć</Text>
+          <Text className="text-secondary mt-4">Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   return (
-    <View className="bg-movie-card-bg flex-1">
+    <View className="bg-primary flex-1">
       <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
         <View>
           <Image
@@ -103,16 +103,20 @@ const Details = () => {
               uri: `${TMDB_IMAGE_BASE_URL}${movie.poster_path}`,
             }}
             className="w-full h-[550px]"
-            resizeMode="stretch"
+            resizeMode="cover"
           />
 
-          <TouchableOpacity className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center">
-            <Image
-              source={icons.play}
-              className="w-6 h-7 ml-1"
-              resizeMode="stretch"
-            />
-          </TouchableOpacity>
+          <View className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center">
+             <WatchlistButton 
+                item={{
+                  id: movie.id,
+                  title: movie.title,
+                  poster_path: movie.poster_path || "",
+                  vote_average: movie.vote_average || 0
+                }} 
+                type="movie"
+              />
+          </View>
         </View>
 
         <View className="flex-col items-start justify-center mt-5 px-5">
@@ -124,8 +128,8 @@ const Details = () => {
             <Text className="text-white text-sm">{movie.runtime}m</Text>
           </View>
 
-          <View className="flex-row items-center bg-star-bg px-2 py-1 rounded-md gap-x-1 mt-2">
-            <Image source={icons.star} className="size-4" tintColor="#FFD700" />
+          <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md gap-x-1 mt-2">
+            <Image source={icons.star} className="size-4" tintColor="#FF9C01" />
 
             <Text className="text-white font-bold text-sm">
               {Math.round(movie.vote_average ?? 0)}/10
@@ -164,15 +168,15 @@ const Details = () => {
       </ScrollView>
 
       <TouchableOpacity
-        className="absolute top-5 left-5 mt-5 px-5 bg-star-bg rounded-lg py-3.5 flex flex-row items-center justify-center z-50"
+        className="absolute top-12 left-5 bg-white rounded-full p-2 z-50 backdrop-blur-lg"
         onPress={router.back}
       >
         <Image
           source={icons.angle_left}
-          className="size-5 mr-1 mt-0.5"
-          tintColor="#fff"
+          className="size-6"
+          resizeMode="contain"
+          tintColor="#000000"
         />
-        <Text className="text-white font-semibold text-base">Go Back</Text>
       </TouchableOpacity>
     </View>
   );

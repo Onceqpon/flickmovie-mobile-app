@@ -7,7 +7,6 @@ import { icons } from '@/constants/icons';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import { signOut } from '@/services/appwriteapi';
 
-// Komponent pomocniczy do wyświetlania statystyk (np. 12 Ocen)
 const StatItem = ({ value, label }: { value: string | number; label: string }) => (
   <View className="items-center">
     <Text className="text-xl font-bold text-white">{value}</Text>
@@ -15,7 +14,6 @@ const StatItem = ({ value, label }: { value: string | number; label: string }) =
   </View>
 );
 
-// Komponent pomocniczy do pozycji w menu (np. Watchlist, Settings)
 const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, title: string, onPress: () => void, isDestructive?: boolean }) => (
   <TouchableOpacity 
     onPress={onPress}
@@ -31,9 +29,8 @@ const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, 
     <Text className={`flex-1 text-lg ${isDestructive ? 'text-red-500 font-bold' : 'text-white'}`}>
       {title}
     </Text>
-    {/* Strzałka w prawo (opcjonalnie) */}
     {!isDestructive && (
-      <Image source={icons.angle_left} className="w-4 h-4 rotate-180" style={{ tintColor: '#6b7280' }} />
+      <Image source={icons.left_arrow} className="w-4 h-4 rotate-180" style={{ tintColor: '#6b7280' }} />
     )}
   </TouchableOpacity>
 );
@@ -47,106 +44,113 @@ const Profile = () => {
       setUser(null);
       setIsLogged(false);
       router.replace('/(auth)/sign-in');
-    } catch (error) {
-      Alert.alert("Błąd", "Wystąpił problem podczas wylogowywania");
+    } catch {
+      Alert.alert("Error", "A problem occurred while logging out");
     }
   }
 
-  // Jeśli użytkownik nie jest zalogowany (zabezpieczenie)
   if (!user) {
     return (
       <SafeAreaView className="bg-primary h-full justify-center items-center px-4">
-        <Text className="text-white text-2xl font-bold mb-4">Profil</Text>
-        <Text className="text-gray-400 text-center mb-8">Zaloguj się, aby zarządzać swoim profilem, ocenami i listami.</Text>
+        <Text className="text-white text-2xl font-bold mb-4">Profile</Text>
+        <Text className="text-gray-400 text-center mb-8">Log in to manage your profile, ratings, and lists.</Text>
         
         <TouchableOpacity 
           onPress={() => router.push('/(auth)')}
           className="bg-secondary w-full py-4 rounded-xl items-center"
         >
-          <Text className="text-primary font-bold text-lg">Zaloguj się</Text>
+          <Text className="text-primary font-bold text-lg">Sign In</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
+  const rawAvatar = (user?.prefs as any)?.avatar;
+  const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
+
   return (
     <SafeAreaView className="bg-primary h-full">
       <ScrollView className="px-4 my-6" showsVerticalScrollIndicator={false}>
         
-        {/* --- HEADER --- */}
         <View className="flex-row items-center justify-between mb-8 mt-4">
           <View className="flex-row items-center">
-            {/* Avatar - używamy avatara z Appwrite lub domyślnej ikony */}
             <View className="w-20 h-20 rounded-full border-2 border-secondary justify-center items-center bg-black-100 overflow-hidden">
-               {/* Jeśli masz user.avatar (url), użyj uri. Tutaj fallback na ikonę usera */}
-               <Image 
-                source={icons.user} 
-                className="w-12 h-12" 
-                resizeMode="contain" 
-                style={{ tintColor: '#fff' }}
-              />
+               {userAvatar ? (
+                <Image 
+                  source={{ uri: userAvatar }} 
+                  className="w-full h-full" 
+                  resizeMode="cover" 
+                />
+              ) : (
+                <Image 
+                  source={icons.user} 
+                  className="w-12 h-12" 
+                  resizeMode="contain" 
+                  style={{ tintColor: '#fff' }}
+                />
+              )}
             </View>
             
             <View className="ml-4">
               <Text className="text-2xl font-bold text-white max-w-[200px]" numberOfLines={1}>
-                {user.username || user.name || "Użytkownik"}
+                {user.name || "User"}
               </Text>
               <Text className="text-sm text-gray-400">{user.email}</Text>
-              <TouchableOpacity className="mt-2">
-                <Text className="text-secondary text-sm font-semibold">Edytuj profil</Text>
+              <TouchableOpacity 
+                className="mt-2"
+                onPress={() => router.push('/profile/edit')}
+              >
+                <Text className="text-secondary text-sm font-semibold">Edit Profile</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        {/* --- STATS BAR --- */}
         <View className="flex-row justify-around bg-black-100 py-4 rounded-2xl mb-8 border border-gray-800">
-          <StatItem value="0" label="Oceny" />
-          <StatItem value="0" label="Listy" />
-          <StatItem value="0" label="Recenzje" />
+          <StatItem value="0" label="Ratings" />
+          <StatItem value="0" label="Lists" />
+          <StatItem value="0" label="Reviews" />
         </View>
 
-        {/* --- MENU SECTIONS --- */}
         <View className="mb-6">
-          <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-widest">Twoja biblioteka</Text>
+          <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-widest">Library</Text>
           
           <MenuItem 
             icon={icons.save} 
             title="Watchlist" 
-            onPress={() => Alert.alert("Coming soon", "Tutaj będzie Twoja lista 'Do obejrzenia'")} 
+            onPress={() => router.push('/profile/watchlist')} 
           />
           <MenuItem 
             icon={icons.star} 
-            title="Twoje Oceny" 
+            title="Your Ratings" 
             onPress={() => {}} 
           />
           <MenuItem 
             icon={icons.clapperboard} 
-            title="Twoje Listy" 
+            title="Your Lists" 
             onPress={() => {}} 
           />
         </View>
 
         <View className="mb-6">
-          <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-widest">Aplikacja</Text>
+          <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-widest">Application</Text>
           
           <MenuItem 
-            icon={icons.search} // Możesz tu dać ikonę settings, jeśli masz
-            title="Ustawienia" 
+            icon={icons.search} 
+            title="Settings" 
             onPress={() => {}} 
           />
            <MenuItem 
-            icon={icons.screen} // Np. ikona "wyświetlanie"
-            title="Wygląd" 
+            icon={icons.screen} 
+            title="Appearance" 
             onPress={() => {}} 
           />
         </View>
 
-        {/* --- LOGOUT --- */}
         <View className="mt-4 mb-10">
           <MenuItem 
-            icon={icons.user} // Możesz dodać ikonę "logout.png" do assets
-            title="Wyloguj się" 
+            icon={icons.user} 
+            title="Log Out" 
             onPress={logout}
             isDestructive={true}
           />

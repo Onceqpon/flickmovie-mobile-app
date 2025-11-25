@@ -46,6 +46,24 @@ export default function RootLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+          name="profile/edit"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="profile/change-password"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="profile/watchlist"
+          options={{
+            headerShown: false,
+          }}
+        />
     </Stack>
   </GlobalProvider> 
 }
