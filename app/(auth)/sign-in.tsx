@@ -101,6 +101,16 @@ const SignIn = () => {
               Sign Up
             </Link>
           </View>
+          <View className="justify-center flex-row gap-2">
+            <Text className="text-lg text-gray-100 font-pregular">
+              Or
+            </Text>
+          </View>
+          <View className="justify-center flex-row gap-2">
+            <Link href="/(tabs)" className="text-lg font-psemibold text-secondary">
+              Continue as a guest
+            </Link>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

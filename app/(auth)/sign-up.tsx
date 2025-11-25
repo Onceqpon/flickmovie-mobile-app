@@ -103,6 +103,16 @@ const SignUp = () => {
             <Text className="text-lg text-gray-100">Already have an account?</Text>
             <Link href="/sign-in" className="text-lg font-bold text-secondary">Sign In</Link>
           </View>
+          <View className="justify-center flex-row gap-2">
+            <Text className="text-lg text-gray-100 font-pregular">
+              Or
+            </Text>
+          </View>
+          <View className="justify-center flex-row gap-2">
+            <Link href="/(tabs)" className="text-lg font-psemibold text-secondary">
+              Continue as a guest
+            </Link>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
