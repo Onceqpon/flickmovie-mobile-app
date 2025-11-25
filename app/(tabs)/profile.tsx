@@ -1,11 +1,11 @@
-import { router } from 'expo-router';
-import React from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { icons } from '@/constants/icons';
 import { useGlobalContext } from '@/context/GlobalProvider';
-import { signOut } from '@/services/appwriteapi';
+import { getWatchlistCount, getWatchlistSeriesCount, signOut } from '@/services/appwriteapi';
 
 const StatItem = ({ value, label }: { value: string | number; label: string }) => (
   <View className="items-center">
@@ -37,6 +37,7 @@ const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, 
 
 const Profile = () => {
   const { user, setIsLogged, setUser } = useGlobalContext();
+  const [watchlistCount, setWatchlistCount] = useState(0); // Nowy stan dla licznika
 
   const logout = async () => {
     try {
@@ -48,6 +49,25 @@ const Profile = () => {
       Alert.alert("Error", "A problem occurred while logging out");
     }
   }
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchCount = async () => {
+        if (user) {
+          try {
+            const [moviesCount, seriesCount] = await Promise.all([
+              getWatchlistCount(user.$id),
+              getWatchlistSeriesCount(user.$id)
+            ]);
+            setWatchlistCount(moviesCount + seriesCount);
+          } catch (error) {
+            console.error("Failed to load stats", error);
+          }
+        }
+      };
+      fetchCount();
+    }, [user])
+  );
 
   if (!user) {
     return (
@@ -107,7 +127,7 @@ const Profile = () => {
         </View>
 
         <View className="flex-row justify-around bg-black-100 py-4 rounded-2xl mb-8 border border-gray-800">
-          <StatItem value="0" label="Ratings" />
+          <StatItem value={watchlistCount} label="Watchlist" />
           <StatItem value="0" label="Lists" />
           <StatItem value="0" label="Reviews" />
         </View>

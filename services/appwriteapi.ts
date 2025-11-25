@@ -373,3 +373,37 @@ export const checkIsOnWatchlistSeries = async (userId: string, seriesId: number)
     return false;
   }
 };
+
+export const getWatchlistCount = async (userId: string) => {
+  try {
+    const result = await database.listDocuments(
+      USERS_DATABASE_ID,
+      WATCHLIST_COLLECTION_ID,
+      [
+        Query.equal("user_Id", userId),
+        Query.limit(1) // Pobieramy tylko 1, bo interesuje nas tylko 'total'
+      ]
+    );
+    return result.total;
+  } catch (error) {
+    console.error("Error fetching watchlist count:", error);
+    return 0;
+  }
+};
+
+export const getWatchlistSeriesCount = async (userId: string) => {
+  try {
+    const result = await database.listDocuments(
+      USERS_DATABASE_ID,
+      WATCHLIST_SERIES_COLLECTION_ID,
+      [
+        Query.equal("user_Id", userId),
+        Query.limit(1)
+      ]
+    );
+    return result.total;
+  } catch (error) {
+    console.error("Error fetching watchlist series count:", error);
+    return 0;
+  }
+};
