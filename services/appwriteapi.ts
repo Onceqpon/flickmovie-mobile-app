@@ -1,4 +1,4 @@
-import { Client, Databases, ID, Query } from "react-native-appwrite";
+import { Account, Avatars, Client, Databases, ID, Query } from "react-native-appwrite";
 
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_COLLECTION_ID!; // Filmy
@@ -10,7 +10,62 @@ const client = new Client()
   .setEndpoint(process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!)
   .setProject(process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!);
 
+const account = new Account(client);
+const avatars = new Avatars(client);
 const database = new Databases(client);
+
+// --- AUTHENTICATION ---
+
+export const createUser = async (email: string, password: string, username: string) => {
+  try {
+    const newAccount = await account.create(ID.unique(), email, password, username);
+    if (!newAccount) throw new Error("Account creation failed");
+
+    // const avatarUrl = avatars.getInitials(username); // (Opcjonalne, na razie nieużywane)
+
+    await signIn(email, password);
+    const currentUser = await account.get();
+
+    return currentUser;
+  } catch (error: any) {
+    console.log(error);
+    throw new Error(error.message || "Unknown error");
+  }
+};
+
+export const signIn = async (email: string, password: string) => {
+  try {
+    const session = await account.createEmailPasswordSession(email, password);
+    return session;
+  } catch (error: any) {
+    console.log(error);
+    throw new Error(error.message || "Login failed");
+  }
+};
+
+export const getCurrentUser = async () => {
+  try {
+    const currentAccount = await account.get();
+    if (!currentAccount) throw new Error("No user logged in");
+    
+    // Jeśli chcesz pobierać awatar:
+    // const avatar = avatars.getInitials(currentAccount.name); 
+
+    return currentAccount;
+  } catch (error) {
+    // console.log("Appwrite Error (getCurrentUser): ", error);
+    return null;
+  }
+};
+
+export const signOut = async () => {
+  try {
+    const session = await account.deleteSession("current");
+    return session;
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+}
 
 // --- FILMY (Bez zmian) ---
 

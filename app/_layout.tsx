@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import './globals.css';
 
+import GlobalProvider from "@/context/GlobalProvider";
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
@@ -13,30 +14,38 @@ configureReanimatedLogger({
 });
 
 export default function RootLayout() {
-  return <Stack> 
-    <Stack.Screen 
-      name="(tabs)" 
-      options={{ 
-        headerShown: false 
-      }} 
-    />
-    <Stack.Screen
-      name="movies/[id]"
-      options={{
-        headerShown: false,
-      }}
-    />
-    <Stack.Screen
-      name="tvseries/[id]"
-      options={{
-        headerShown: false,
-      }}
-    />
-    <Stack.Screen
-      name="search/search"
-      options={{
-        headerShown: false,
-      }}
-    />
-  </Stack>;
+  return <GlobalProvider>
+    <Stack> 
+      <Stack.Screen 
+        name="(tabs)" 
+        options={{ 
+          headerShown: false 
+        }} 
+      />
+      <Stack.Screen 
+        name="(auth)"
+        options={{
+          headerShown: false 
+        }} 
+      />
+      <Stack.Screen
+        name="movies/[id]"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="tvseries/[id]"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="search/search"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  </GlobalProvider> 
 }
