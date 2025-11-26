@@ -166,7 +166,7 @@ const Details = () => {
             }
           />
         </View>
-        <Reviews movieId={Number(id)} />
+        <Reviews movieId={Number(id)} title={movie.title} posterPath={movie.poster_path || ""} />
       </ScrollView>
 
       <TouchableOpacity

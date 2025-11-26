@@ -282,7 +282,7 @@ const Details = () => {
             )}
           </View>
         </View>
-        <Reviews seriesId={Number(id)} />
+        <Reviews seriesId={Number(id)} title={series.name} posterPath={series.poster_path || ""} />
       </ScrollView>
 
       <TouchableOpacity

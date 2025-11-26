@@ -167,5 +167,7 @@ interface ReviewDocument {
   avatar_url: string;
   rating: number;
   content: string;
+  title: string;       // NOWE
+  poster_path: string; // NOWE
   $createdAt: string;
 }

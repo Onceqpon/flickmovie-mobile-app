@@ -64,6 +64,12 @@ export default function RootLayout() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="profile/ratings"
+          options={{
+            headerShown: false,
+          }}
+        />
     </Stack>
   </GlobalProvider> 
 }

@@ -143,7 +143,7 @@ const Profile = () => {
           <MenuItem 
             icon={icons.star} 
             title="Your Ratings" 
-            onPress={() => {}} 
+            onPress={() => router.push('/profile/ratings')} 
           />
           <MenuItem 
             icon={icons.clapperboard} 

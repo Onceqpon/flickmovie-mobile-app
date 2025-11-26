@@ -1,7 +1,6 @@
 import { Account, Client, Databases, ID, Query, Storage } from "react-native-appwrite";
 
-const CONTENT_DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
-const USERS_DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_FLICKMOVIEDATABASE_ID!; 
+const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_FLICKMOVIEDATABASE_ID!; 
 
 const MOVIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_COLLECTION_ID!;
 const SERIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_SERIES_COLLECTION_ID!;
@@ -130,14 +129,14 @@ export const updateUserAvatar = async (avatarUrl: string) => {
 
 export const updateSearchCount = async (query: string, movie: Movie) => {
   try {
-    const result = await database.listDocuments(CONTENT_DATABASE_ID, MOVIES_COLLECTION_ID, [
+    const result = await database.listDocuments(DATABASE_ID, MOVIES_COLLECTION_ID, [
       Query.equal("movie_id", movie.id),
     ]);
 
     if (result.documents.length > 0) {
       const existingMovie = result.documents[0];
       await database.updateDocument(
-        CONTENT_DATABASE_ID,
+        DATABASE_ID,
         MOVIES_COLLECTION_ID,
         existingMovie.$id,
         {
@@ -145,7 +144,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
         }
       );
     } else {
-      await database.createDocument(CONTENT_DATABASE_ID, MOVIES_COLLECTION_ID, ID.unique(), {
+      await database.createDocument(DATABASE_ID, MOVIES_COLLECTION_ID, ID.unique(), {
         movie_id: movie.id,
         title: movie.title,
         count: 1,
@@ -160,7 +159,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
 
 export const getTrendingMovies = async (): Promise<TrendingMovie[]> => {
   try {
-    const result = await database.listDocuments(CONTENT_DATABASE_ID, MOVIES_COLLECTION_ID, [
+    const result = await database.listDocuments(DATABASE_ID, MOVIES_COLLECTION_ID, [
       Query.limit(5),
       Query.orderDesc("count"),
     ]);
@@ -179,14 +178,14 @@ export const getTrendingMovies = async (): Promise<TrendingMovie[]> => {
 
 export const updateSeriesSearchCount = async (query: string, series: TVSeries) => {
   try {
-    const result = await database.listDocuments(CONTENT_DATABASE_ID, SERIES_COLLECTION_ID, [
+    const result = await database.listDocuments(DATABASE_ID, SERIES_COLLECTION_ID, [
       Query.equal("series_id", series.id),
     ]);
 
     if (result.documents.length > 0) {
       const existingSeries = result.documents[0];
       await database.updateDocument(
-        CONTENT_DATABASE_ID,
+        DATABASE_ID,
         SERIES_COLLECTION_ID,
         existingSeries.$id,
         {
@@ -194,7 +193,7 @@ export const updateSeriesSearchCount = async (query: string, series: TVSeries) =
         }
       );
     } else {
-      await database.createDocument(CONTENT_DATABASE_ID, SERIES_COLLECTION_ID, ID.unique(), {
+      await database.createDocument(DATABASE_ID, SERIES_COLLECTION_ID, ID.unique(), {
         series_id: series.id,
         name: series.name,
         count: 1,
@@ -208,7 +207,7 @@ export const updateSeriesSearchCount = async (query: string, series: TVSeries) =
 
 export const getTrendingSeries = async (): Promise<TrendingSeries[]> => {
   try {
-    const result = await database.listDocuments(CONTENT_DATABASE_ID, SERIES_COLLECTION_ID, [
+    const result = await database.listDocuments(DATABASE_ID, SERIES_COLLECTION_ID, [
       Query.limit(5),
       Query.orderDesc("count"),
     ]);
@@ -231,7 +230,7 @@ export const addToWatchlist = async (
 ) => {
   try {
     const result = await database.createDocument(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_COLLECTION_ID,
       ID.unique(),
       {
@@ -251,14 +250,14 @@ export const addToWatchlist = async (
 export const removeFromWatchlist = async (userId: string, movieId: number) => {
   try {
     const documents = await database.listDocuments(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_COLLECTION_ID,
       [Query.equal("user_Id", userId), Query.equal("movie_id", movieId)]
     );
 
     if (documents.documents.length > 0) {
       const docId = documents.documents[0].$id;
-      await database.deleteDocument(USERS_DATABASE_ID, WATCHLIST_COLLECTION_ID, docId);
+      await database.deleteDocument(DATABASE_ID, WATCHLIST_COLLECTION_ID, docId);
       return true;
     }
     return false;
@@ -270,7 +269,7 @@ export const removeFromWatchlist = async (userId: string, movieId: number) => {
 export const getUserWatchlist = async (userId: string) => {
   try {
     const result = await database.listDocuments(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_COLLECTION_ID,
       [Query.equal("user_Id", userId), Query.orderDesc("$createdAt")]
     );
@@ -289,7 +288,7 @@ export const getUserWatchlist = async (userId: string) => {
 export const checkIsOnWatchlist = async (userId: string, movieId: number) => {
   try {
     const result = await database.listDocuments(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_COLLECTION_ID,
       [Query.equal("user_Id", userId), Query.equal("movie_id", movieId)]
     );
@@ -307,7 +306,7 @@ export const addToWatchlistSeries = async (
 ) => {
   try {
     const result = await database.createDocument(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_SERIES_COLLECTION_ID,
       ID.unique(),
       {
@@ -327,14 +326,14 @@ export const addToWatchlistSeries = async (
 export const removeFromWatchlistSeries = async (userId: string, seriesId: number) => {
   try {
     const documents = await database.listDocuments(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_SERIES_COLLECTION_ID,
       [Query.equal("user_Id", userId), Query.equal("series_id", seriesId)]
     );
 
     if (documents.documents.length > 0) {
       const docId = documents.documents[0].$id;
-      await database.deleteDocument(USERS_DATABASE_ID, WATCHLIST_SERIES_COLLECTION_ID, docId);
+      await database.deleteDocument(DATABASE_ID, WATCHLIST_SERIES_COLLECTION_ID, docId);
       return true;
     }
     return false;
@@ -346,7 +345,7 @@ export const removeFromWatchlistSeries = async (userId: string, seriesId: number
 export const getUserWatchlistSeries = async (userId: string) => {
   try {
     const result = await database.listDocuments(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_SERIES_COLLECTION_ID,
       [Query.equal("user_Id", userId), Query.orderDesc("$createdAt")]
     );
@@ -365,7 +364,7 @@ export const getUserWatchlistSeries = async (userId: string) => {
 export const checkIsOnWatchlistSeries = async (userId: string, seriesId: number) => {
   try {
     const result = await database.listDocuments(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_SERIES_COLLECTION_ID,
       [Query.equal("user_Id", userId), Query.equal("series_id", seriesId)]
     );
@@ -378,7 +377,7 @@ export const checkIsOnWatchlistSeries = async (userId: string, seriesId: number)
 export const getWatchlistCount = async (userId: string) => {
   try {
     const result = await database.listDocuments(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_COLLECTION_ID,
       [
         Query.equal("user_Id", userId),
@@ -395,7 +394,7 @@ export const getWatchlistCount = async (userId: string) => {
 export const getWatchlistSeriesCount = async (userId: string) => {
   try {
     const result = await database.listDocuments(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       WATCHLIST_SERIES_COLLECTION_ID,
       [
         Query.equal("user_Id", userId),
@@ -411,25 +410,26 @@ export const getWatchlistSeriesCount = async (userId: string) => {
 
 export const getReviews = async (id: number, type: "movie" | "series") => {
   const attribute = type === "movie" ? "movie_id" : "series_id";
-  
   try {
     const result = await database.listDocuments(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       REVIEWS_COLLECTION_ID,
       [Query.equal(attribute, id), Query.orderDesc("$createdAt")]
     );
-    
-    return result.documents.map((doc) => ({
-      $id: doc.$id,
-      movie_id: doc.movie_id,
-      series_id: doc.series_id,
-      user_id: doc.user_id,
-      username: doc.username,
-      avatar_url: doc.avatar_url,
-      rating: doc.rating,
-      content: doc.content,
-      $createdAt: doc.$createdAt,
-    })) as ReviewDocument[];
+    return result.documents as unknown as ReviewDocument[];
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};
+
+export const getUserReviews = async (userId: string) => {
+  try {
+    const result = await database.listDocuments(
+      DATABASE_ID,
+      REVIEWS_COLLECTION_ID,
+      [Query.equal("user_id", userId), Query.orderDesc("$createdAt")]
+    );
+    return result.documents as unknown as ReviewDocument[];
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -442,11 +442,13 @@ export const createReview = async (
   username: string,
   avatarUrl: string,
   rating: number,
-  content: string
+  content: string,
+  title: string,       
+  posterPath: string   
 ) => {
   try {
     const result = await database.createDocument(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       REVIEWS_COLLECTION_ID,
       ID.unique(),
       {
@@ -457,6 +459,8 @@ export const createReview = async (
         avatar_url: avatarUrl,
         rating: rating,
         content: content,
+        title: title,             
+        poster_path: posterPath,  
       }
     );
     return result;
@@ -468,7 +472,7 @@ export const createReview = async (
 export const updateReview = async (reviewId: string, rating: number, content: string) => {
   try {
     const result = await database.updateDocument(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       REVIEWS_COLLECTION_ID,
       reviewId,
       {
@@ -485,7 +489,7 @@ export const updateReview = async (reviewId: string, rating: number, content: st
 export const deleteReview = async (reviewId: string) => {
   try {
     await database.deleteDocument(
-      USERS_DATABASE_ID,
+      DATABASE_ID,
       REVIEWS_COLLECTION_ID,
       reviewId
     );

@@ -7,15 +7,16 @@ import { ActivityIndicator, Alert, Image, Text, TextInput, TouchableOpacity, Vie
 interface ReviewsProps {
   movieId?: number;
   seriesId?: number;
+  title: string;        
+  posterPath: string;   
 }
 
-const Reviews = ({ movieId, seriesId }: ReviewsProps) => {
+const Reviews = ({ movieId, seriesId, title, posterPath }: ReviewsProps) => {
   const { user } = useGlobalContext();
   const [reviews, setReviews] = useState<ReviewDocument[]>([]);
   const [userReview, setUserReview] = useState<ReviewDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
   const [rating, setRating] = useState(0);
   const [content, setContent] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -76,9 +77,11 @@ const Reviews = ({ movieId, seriesId }: ReviewsProps) => {
           contentType,
           user.$id,
           user.name,
-          (user.prefs as any).avatar || "", 
+          (user.prefs as any).avatar || "",
           rating,
-          content
+          content,
+          title,       
+          posterPath 
         );
         Alert.alert("Success", "Review posted successfully");
       }
@@ -89,11 +92,10 @@ const Reviews = ({ movieId, seriesId }: ReviewsProps) => {
       setSubmitting(false);
     }
   };
-
+  
   const handleDelete = () => {
-    if (!userReview) return;
-
-    Alert.alert(
+     if (!userReview) return;
+     Alert.alert(
       "Delete Review",
       "Are you sure you want to delete your review?",
       [
@@ -122,7 +124,8 @@ const Reviews = ({ movieId, seriesId }: ReviewsProps) => {
   };
 
   const renderStars = (currentRating: number, interactive: boolean = false) => {
-    return (
+     // ... (kod z poprzedniej wersji)
+     return (
       <View className="flex-row">
         {[1, 2, 3, 4, 5].map((star) => (
           <TouchableOpacity
@@ -141,9 +144,10 @@ const Reviews = ({ movieId, seriesId }: ReviewsProps) => {
       </View>
     );
   };
-
+  
   const renderReviewForm = () => (
-    <View className="bg-gray-800 p-4 rounded-xl mb-6">
+     // ... (kod z poprzedniej wersji)
+     <View className="bg-gray-800 p-4 rounded-xl mb-6">
       <Text className="text-white font-semibold mb-2">
         {isEditing ? "Edit Your Review" : "Write a Review"}
       </Text>
