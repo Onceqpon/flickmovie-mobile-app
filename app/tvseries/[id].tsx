@@ -15,6 +15,7 @@ import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
 import { fetchSeasonDetails, fetchTVSeriesDetails } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
+import SaveToListModal from '../../components/SaveToListModal'; // <--- IMPORT
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
@@ -38,6 +39,9 @@ const Details = () => {
 
   const seriesId = Array.isArray(id) ? id[0] : (id as string | undefined);
   const shouldFetch = !!seriesId;
+
+  // --- STATE DLA MODALA ---
+  const [modalVisible, setModalVisible] = useState(false);
 
   const [expandedSeasonId, setExpandedSeasonId] = useState<number | null>(null);
   const [episodes, setEpisodes] = useState<any[]>([]);
@@ -127,16 +131,36 @@ const Details = () => {
             resizeMode="stretch"
           />
 
-          <View className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center">
-            <WatchlistButton 
-              item={{
-                id: series.id,
-                name: series.name, // Seriale mają 'name' zamiast 'title'
-                poster_path: series.poster_path || "",
-                vote_average: series.vote_average || 0
-              }} 
-              type="series"
-            />
+          {/* --- Kontener Przycisków Akcji --- */}
+          <View className="absolute bottom-5 right-5 flex-row gap-4">
+            
+            {/* Przycisk Watchlist */}
+            <View className="rounded-full size-14 bg-white flex items-center justify-center shadow-lg">
+              <WatchlistButton 
+                item={{
+                  id: series.id,
+                  name: series.name,
+                  poster_path: series.poster_path || "",
+                  vote_average: series.vote_average || 0
+                }} 
+                type="series"
+              />
+            </View>
+
+            {/* --- NOWY PRZYCISK: Dodaj do Listy --- */}
+            <TouchableOpacity 
+              onPress={() => setModalVisible(true)}
+              className="rounded-full size-14 bg-white flex items-center justify-center shadow-lg"
+              activeOpacity={0.8}
+            >
+               <Image 
+                 source={icons.plus} 
+                 className="size-6" 
+                 resizeMode="contain" 
+                 tintColor="#FF9C01" // Pomarańczowy akcent
+               />
+            </TouchableOpacity>
+
           </View>
         </View>
 
@@ -296,6 +320,14 @@ const Details = () => {
           tintColor="#000000"
         />
       </TouchableOpacity>
+
+      {/* --- MODAL DO WYBORU LISTY --- */}
+      <SaveToListModal 
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        mediaId={series.id}
+        mediaType="tv" // <--- WAŻNE: typ 'tv'
+      />
     </View>
   );
 };

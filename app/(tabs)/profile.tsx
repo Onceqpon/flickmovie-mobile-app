@@ -5,7 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { icons } from '@/constants/icons';
 import { useGlobalContext } from '@/context/GlobalProvider';
-import { getWatchlistCount, getWatchlistSeriesCount, signOut } from '@/services/appwriteapi';
+// 1. Dodałem nowe importy tutaj:
+import {
+  getListsCount,
+  getReviewsCount,
+  getWatchlistCount,
+  getWatchlistSeriesCount,
+  signOut
+} from '@/services/appwriteapi';
 
 const StatItem = ({ value, label }: { value: string | number; label: string }) => (
   <View className="items-center">
@@ -37,7 +44,11 @@ const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, 
 
 const Profile = () => {
   const { user, setIsLogged, setUser } = useGlobalContext();
+  
+  // 2. Nowe stany dla liczników
   const [watchlistCount, setWatchlistCount] = useState(0);
+  const [listsCount, setListsCount] = useState(0);
+  const [reviewsCount, setReviewsCount] = useState(0);
 
   const logout = async () => {
     try {
@@ -55,11 +66,17 @@ const Profile = () => {
       const fetchCount = async () => {
         if (user) {
           try {
-            const [moviesCount, seriesCount] = await Promise.all([
+            // 3. Pobieramy wszystkie statystyki równolegle
+            const [moviesCount, seriesCount, fetchedListsCount, fetchedReviewsCount] = await Promise.all([
               getWatchlistCount(user.$id),
-              getWatchlistSeriesCount(user.$id)
+              getWatchlistSeriesCount(user.$id),
+              getListsCount(user.$id),    // <-- Nowa funkcja
+              getReviewsCount(user.$id)   // <-- Nowa funkcja
             ]);
+            
             setWatchlistCount(moviesCount + seriesCount);
+            setListsCount(fetchedListsCount);
+            setReviewsCount(fetchedReviewsCount);
           } catch (error) {
             console.error("Failed to load stats", error);
           }
@@ -126,10 +143,11 @@ const Profile = () => {
           </View>
         </View>
 
+        {/* 4. Wyświetlanie dynamicznych wartości */}
         <View className="flex-row justify-around bg-black-100 py-4 rounded-2xl mb-8 border border-gray-800">
           <StatItem value={watchlistCount} label="Watchlist" />
-          <StatItem value="0" label="Lists" />
-          <StatItem value="0" label="Reviews" />
+          <StatItem value={listsCount} label="Lists" />
+          <StatItem value={reviewsCount} label="Reviews" />
         </View>
 
         <View className="mb-6">
@@ -148,7 +166,7 @@ const Profile = () => {
           <MenuItem 
             icon={icons.clapperboard} 
             title="Your Lists" 
-            onPress={() => {}} 
+            onPress={() => router.push('/profile/lists')} 
           />
         </View>
 

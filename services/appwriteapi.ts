@@ -7,6 +7,7 @@ const SERIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_SERIES_COLLECTION_
 const WATCHLIST_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WATCHLIST_COLLECTION_ID!;
 const WATCHLIST_SERIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WATCHLIST_SERIES_COLLECTION_ID!;
 const REVIEWS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID!;
+const LISTS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_LISTS_COLLECTION_ID!;
 
 const STORAGE_ID = process.env.EXPO_PUBLIC_APPWRITE_STORAGE_ID!;
 const ENDPOINT = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!;
@@ -496,5 +497,188 @@ export const deleteReview = async (reviewId: string) => {
     return true;
   } catch (error: any) {
     throw new Error(error.message);
+  }
+};
+
+export const createList = async (userId: string, listName: string, description: string = "") => {
+  try {
+    const newList = await database.createDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      ID.unique(),
+      {
+        user_id: userId,
+        name: listName,
+        description: description,
+        items: [] // Pusta tablica na start
+      }
+    );
+    return newList;
+  } catch (error: any) {
+    console.error("Error creating list:", error);
+    throw new Error(error.message || "Failed to create list");
+  }
+};
+
+export const getUserLists = async (userId: string) => {
+  try {
+    const result = await database.listDocuments(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      [Query.equal("user_id", userId), Query.orderDesc("$createdAt")]
+    );
+    return result.documents;
+  } catch (error: any) {
+    console.error("Error fetching user lists:", error);
+    throw new Error(error.message || "Failed to fetch lists");
+  }
+};
+
+export const addItemToList = async (listId: string, itemId: string, type: "movie" | "tv") => {
+  try {
+    // 1. Pobierz aktualną wersję listy, aby dostać tablicę items
+    const currentList = await database.getDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId
+    );
+
+    // Formatujemy item jako "typ:id", np. "movie:550"
+    const itemString = `${type}:${itemId}`;
+    
+    // Sprawdź czy element już istnieje, aby uniknąć duplikatów
+    // (rzutujemy currentList.items na string[], bo Appwrite zwraca tablicę)
+    const currentItems = currentList.items as string[];
+
+    if (currentItems.includes(itemString)) {
+      return currentList; // Już jest na liście, zwracamy bez zmian
+    }
+
+    // 2. Zaktualizuj dokument dodając nowy element
+    const updatedList = await database.updateDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId,
+      {
+        items: [...currentItems, itemString]
+      }
+    );
+    return updatedList;
+  } catch (error: any) {
+    console.error("Error adding item to list:", error);
+    throw new Error(error.message || "Failed to add item to list");
+  }
+};
+
+export const removeItemFromList = async (listId: string, itemId: string, type: "movie" | "tv") => {
+  try {
+    // 1. Pobierz aktualną listę
+    const currentList = await database.getDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId
+    );
+
+    const itemString = `${type}:${itemId}`;
+    const currentItems = currentList.items as string[];
+
+    // 2. Filtrujemy tablicę, usuwając szukany element
+    const newItems = currentItems.filter((item) => item !== itemString);
+
+    // 3. Aktualizujemy dokument
+    const updatedList = await database.updateDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId,
+      {
+        items: newItems
+      }
+    );
+    return updatedList;
+  } catch (error: any) {
+    console.error("Error removing item from list:", error);
+    throw new Error(error.message || "Failed to remove item from list");
+  }
+};
+
+export const updateList = async (listId: string, name: string, description: string) => {
+  try {
+    const updatedList = await database.updateDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId,
+      {
+        name: name,
+        description: description,
+      }
+    );
+    return updatedList;
+  } catch (error: any) {
+    console.error("Error updating list:", error);
+    throw new Error(error.message || "Failed to update list");
+  }
+};
+
+// Delete a List
+export const deleteList = async (listId: string) => {
+  try {
+    await database.deleteDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId
+    );
+    return true;
+  } catch (error: any) {
+    console.error("Error deleting list:", error);
+    throw new Error(error.message || "Failed to delete list");
+  }
+};
+
+export const getListDetails = async (listId: string) => {
+  try {
+    const doc = await database.getDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId
+    );
+    return doc;
+  } catch (error: any) {
+    console.error("Error fetching list details:", error);
+    throw new Error(error.message || "Failed to fetch list details");
+  }
+};
+
+export const getListsCount = async (userId: string) => {
+  try {
+    const result = await database.listDocuments(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      [
+        Query.equal("user_id", userId),
+        Query.limit(1) // Pobieramy 1, ale interesuje nas 'total'
+      ]
+    );
+    return result.total;
+  } catch (error) {
+    console.error("Error fetching lists count:", error);
+    return 0;
+  }
+};
+
+// Pobierz liczbę recenzji użytkownika
+export const getReviewsCount = async (userId: string) => {
+  try {
+    const result = await database.listDocuments(
+      DATABASE_ID,
+      REVIEWS_COLLECTION_ID,
+      [
+        Query.equal("user_id", userId),
+        Query.limit(1)
+      ]
+    );
+    return result.total;
+  } catch (error) {
+    console.error("Error fetching reviews count:", error);
+    return 0;
   }
 };

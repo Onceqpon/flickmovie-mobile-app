@@ -14,6 +14,8 @@ import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
 import { fetchMovieDetails } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
+import { useState } from "react";
+import SaveToListModal from '../../components/SaveToListModal'; // Upewnij się, że ścieżka jest poprawna
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
@@ -45,6 +47,7 @@ const formatCurrency = (amount: number | undefined): string => {
 const Details = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const [modalVisible, setModalVisible] = useState(false);
 
   const movieId = Array.isArray(id) ? id[0] : (id as string | undefined);
   const shouldFetch = !!movieId;
@@ -107,16 +110,36 @@ const Details = () => {
             resizeMode="cover"
           />
 
-          <View className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center">
-             <WatchlistButton 
-                item={{
-                  id: movie.id,
-                  title: movie.title,
-                  poster_path: movie.poster_path || "",
-                  vote_average: movie.vote_average || 0
-                }} 
-                type="movie"
-              />
+          {/* Kontener Przycisków Akcji (Watchlist + SaveToList) */}
+          <View className="absolute bottom-5 right-5 flex-row gap-4">
+            
+            {/* Przycisk Watchlist */}
+            <View className="rounded-full size-14 bg-white flex items-center justify-center shadow-lg">
+               <WatchlistButton 
+                 item={{
+                   id: movie.id,
+                   title: movie.title,
+                   poster_path: movie.poster_path || "",
+                   vote_average: movie.vote_average || 0
+                 }} 
+                 type="movie"
+               />
+            </View>
+
+            {/* --- NOWY PRZYCISK: Dodaj do Listy --- */}
+            <TouchableOpacity 
+              onPress={() => setModalVisible(true)}
+              className="rounded-full size-14 bg-white flex items-center justify-center shadow-lg"
+              activeOpacity={0.8}
+            >
+               <Image 
+                 source={icons.plus} // Upewnij się, że masz ikonę bookmark w constants/icons
+                 className="size-7" 
+                 resizeMode="contain" 
+                 tintColor="#FF9C01" // Kolor akcentu
+               />
+            </TouchableOpacity>
+
           </View>
         </View>
 
@@ -169,6 +192,7 @@ const Details = () => {
         <Reviews movieId={Number(id)} title={movie.title} posterPath={movie.poster_path || ""} />
       </ScrollView>
 
+      {/* Przycisk powrotu (Strzałka w lewo) */}
       <TouchableOpacity
         className="absolute top-12 left-5 bg-white rounded-full p-2 z-50 backdrop-blur-lg"
         onPress={router.back}
@@ -180,6 +204,15 @@ const Details = () => {
           tintColor="#000000"
         />
       </TouchableOpacity>
+
+      {/* --- MODAL DO WYBORU LISTY --- */}
+      <SaveToListModal 
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        mediaId={movie.id}
+        mediaType="movie"
+      />
+
     </View>
   );
 };

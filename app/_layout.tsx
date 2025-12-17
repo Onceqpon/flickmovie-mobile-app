@@ -7,6 +7,8 @@ import {
   ReanimatedLogLevel,
 } from "react-native-reanimated";
 
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -14,10 +16,17 @@ configureReanimatedLogger({
 });
 
 export default function RootLayout() {
-  return <GlobalProvider>
+  return <GestureHandlerRootView style={{ flex: 1 }}>
+  <GlobalProvider>
     <Stack> 
       <Stack.Screen 
         name="(tabs)" 
+        options={{ 
+          headerShown: false 
+        }} 
+      />
+      <Stack.Screen 
+        name="game" 
         options={{ 
           headerShown: false 
         }} 
@@ -70,6 +79,19 @@ export default function RootLayout() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="profile/lists"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="profile/lists/[id]"
+          options={{
+            headerShown: false,
+          }}
+        />   
     </Stack>
   </GlobalProvider> 
+  </GestureHandlerRootView>
 }
