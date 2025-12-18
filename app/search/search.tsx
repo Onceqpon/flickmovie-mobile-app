@@ -9,7 +9,6 @@ import {
   View,
 } from "react-native";
 
-import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
 
 import { updateSearchCount, updateSeriesSearchCount } from "@/services/appwriteapi";
@@ -87,11 +86,9 @@ const Search = () => {
       >
 
         <View className="w-full flex-row justify-center mt-20 items-center">
-          <Image
-            source={icons.logo}
-            className="w-[250px] h-[100px] mt-10 mx-auto"
-            resizeMode="contain"
-          />
+          <Text className="text-5xl text-white font-black text-center tracking-wider mt-20 mb-5 ">
+                FLICK<Text className="text-secondary">MOVIE</Text>
+             </Text>
         </View>
 
         <View className="my-5">

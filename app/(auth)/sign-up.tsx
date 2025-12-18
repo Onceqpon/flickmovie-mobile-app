@@ -1,9 +1,8 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { icons } from '@/constants/icons';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import { createUser } from '@/services/appwriteapi';
 
@@ -42,11 +41,9 @@ const SignUp = () => {
       <ScrollView>
         <View className="w-full justify-center min-h-[85vh] px-4 my-6">
           <View className="w-full justify-center items-center">
-            <Image
-              source={icons.logo}
-              className="w-[200px] h-[80px]"
-              resizeMode="contain"
-            />
+            <Text className="text-5xl text-white font-black text-center tracking-wider mt-20 mb-5 ">
+                FLICK<Text className="text-secondary">MOVIE</Text>
+             </Text>
           </View>
           <Text className="text-2xl text-white font-semibold mt-10">Sign Up</Text>
 

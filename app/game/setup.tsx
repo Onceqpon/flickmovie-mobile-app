@@ -3,13 +3,9 @@ import { icons } from "@/constants/icons";
 import { MOVIE_GENRES, TV_GENRES, WATCH_PROVIDERS } from "@/services/tmdbapi";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, LayoutAnimation, Platform, ScrollView, Text, TouchableOpacity, UIManager, View } from "react-native";
+import { Image, LayoutAnimation, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Enable layout animations for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 type Step = 0 | 1 | 2; // 0: Type, 1: VOD, 2: Genres
 type ContentType = 'movie' | 'tv' | null;

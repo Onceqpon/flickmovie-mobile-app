@@ -1,20 +1,17 @@
 import { router } from 'expo-router';
 import React from 'react';
-import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { icons } from '@/constants/icons';
 
 const Welcome = () => {
   return (
     <SafeAreaView className="bg-primary h-full">
       <ScrollView contentContainerStyle={{ height: '100%' }}>
         <View className="w-full justify-center items-center min-h-[85vh] px-4">
-          <Image
-            source={icons.logo}
-            className="w-[200px] h-[80px]"
-            resizeMode="contain"
-          />
+          <Text className="text-5xl text-white font-black text-center tracking-wider mt-20 mb-5 ">
+                FLICK<Text className="text-secondary">MOVIE</Text>
+             </Text>
 
           <Text className="text-3xl text-white font-bold text-center mt-5">
             Discover movies with <Text className="text-secondary">FlickMovie</Text>

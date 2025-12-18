@@ -11,7 +11,6 @@ import {
 import { fetchMovies } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
 
-import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
 
 import MovieCard from "@/components/MovieCard";
@@ -97,11 +96,9 @@ const Index = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ minHeight: "100%", paddingBottom: 100 }}
       >
-        <Image 
-          source={icons.logo} 
-          className="w-[250px] h-[100px] mt-10 mx-auto"
-          resizeMode="contain" 
-        />
+        <Text className="text-5xl text-white font-black text-center tracking-wider mt-20 mb-5 ">
+                FLICK<Text className="text-secondary">MOVIE</Text>
+             </Text>
 
         <View className="flex-1 mt-5">
           <SearchBar

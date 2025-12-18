@@ -6,12 +6,12 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, Image, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-    Extrapolation,
-    interpolate,
-    runOnJS,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -294,22 +294,6 @@ export default function GamePlay() {
                         </Text>
                     </View>
                 </ScrollView>
-
-                <View className="absolute bottom-8 w-full flex-row justify-center gap-12">
-                     <TouchableOpacity 
-                        onPress={() => triggerSwipeFromModal('left')}
-                        className="w-16 h-16 bg-black-200 rounded-full justify-center items-center border border-red-500 shadow-xl"
-                    >
-                         <Text className="text-red-500 text-2xl font-bold">✕</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                        onPress={() => triggerSwipeFromModal('right')}
-                        className="w-16 h-16 bg-secondary rounded-full justify-center items-center shadow-xl shadow-orange-500/40"
-                    >
-                        <Image source={icons.play} className="w-7 h-7 ml-1" tintColor="white" />
-                    </TouchableOpacity>
-                </View>
             </View>
         </Modal>
       )}
