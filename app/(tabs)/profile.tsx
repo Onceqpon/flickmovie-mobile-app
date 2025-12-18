@@ -1,11 +1,12 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// 1. Import i konfiguracja cssInterop (dla pewności)
 import { icons } from '@/constants/icons';
 import { useGlobalContext } from '@/context/GlobalProvider';
-// 1. Dodałem nowe importy tutaj:
 import {
   getListsCount,
   getReviewsCount,
@@ -13,31 +14,44 @@ import {
   getWatchlistSeriesCount,
   signOut
 } from '@/services/appwriteapi';
+import { cssInterop } from "nativewind";
 
+cssInterop(LinearGradient, {
+  className: "style",
+});
+
+// --- KOMPONENT STATYSTYKI ---
 const StatItem = ({ value, label }: { value: string | number; label: string }) => (
-  <View className="items-center">
-    <Text className="text-xl font-bold text-white">{value}</Text>
-    <Text className="text-sm text-gray-400">{label}</Text>
+  <View className="items-center flex-1">
+    <Text className="text-2xl font-black text-white">{value}</Text>
+    <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">{label}</Text>
   </View>
 );
 
+// --- KOMPONENT MENU ---
 const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, title: string, onPress: () => void, isDestructive?: boolean }) => (
   <TouchableOpacity 
     onPress={onPress}
     activeOpacity={0.7}
-    className="flex-row items-center py-4 border-b border-gray-800"
+    className={`flex-row items-center py-4 px-4 mb-2 rounded-2xl border ${isDestructive ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5 border-white/5'}`}
   >
-    <Image 
-      source={icon} 
-      className="w-6 h-6 mr-4" 
-      resizeMode="contain" 
-      style={{ tintColor: isDestructive ? '#ef4444' : '#cdcde0' }} 
-    />
-    <Text className={`flex-1 text-lg ${isDestructive ? 'text-red-500 font-bold' : 'text-white'}`}>
+    <View className={`p-2 rounded-full mr-4 ${isDestructive ? 'bg-red-500/20' : 'bg-white/10'}`}>
+        <Image 
+        source={icon} 
+        className="w-5 h-5" 
+        resizeMode="contain" 
+        style={{ tintColor: isDestructive ? '#ef4444' : '#FFA001' }} 
+        />
+    </View>
+    
+    <Text className={`flex-1 text-lg font-semibold ${isDestructive ? 'text-red-500' : 'text-white'}`}>
       {title}
     </Text>
+    
     {!isDestructive && (
-      <Image source={icons.left_arrow} className="w-4 h-4 rotate-180" style={{ tintColor: '#6b7280' }} />
+      <View className="bg-white/10 p-1.5 rounded-full">
+         <Image source={icons.left_arrow || icons.angle_left} className="w-3 h-3 rotate-180" style={{ tintColor: '#9CA3AF' }} />
+      </View>
     )}
   </TouchableOpacity>
 );
@@ -45,7 +59,6 @@ const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, 
 const Profile = () => {
   const { user, setIsLogged, setUser } = useGlobalContext();
   
-  // 2. Nowe stany dla liczników
   const [watchlistCount, setWatchlistCount] = useState(0);
   const [listsCount, setListsCount] = useState(0);
   const [reviewsCount, setReviewsCount] = useState(0);
@@ -66,12 +79,11 @@ const Profile = () => {
       const fetchCount = async () => {
         if (user) {
           try {
-            // 3. Pobieramy wszystkie statystyki równolegle
             const [moviesCount, seriesCount, fetchedListsCount, fetchedReviewsCount] = await Promise.all([
               getWatchlistCount(user.$id),
               getWatchlistSeriesCount(user.$id),
-              getListsCount(user.$id),    // <-- Nowa funkcja
-              getReviewsCount(user.$id)   // <-- Nowa funkcja
+              getListsCount(user.$id),
+              getReviewsCount(user.$id)
             ]);
             
             setWatchlistCount(moviesCount + seriesCount);
@@ -88,17 +100,28 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <SafeAreaView className="bg-primary h-full justify-center items-center px-4">
-        <Text className="text-white text-2xl font-bold mb-4">Profile</Text>
-        <Text className="text-gray-400 text-center mb-8">Log in to manage your profile, ratings, and lists.</Text>
-        
-        <TouchableOpacity 
-          onPress={() => router.push('/(auth)')}
-          className="bg-secondary w-full py-4 rounded-xl items-center"
-        >
-          <Text className="text-primary font-bold text-lg">Sign In</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      <View className="flex-1 bg-[#1E1E2D]">
+          <LinearGradient
+            colors={["#000C1C", "#161622", "#1E1E2D"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            className="absolute w-full h-full"
+          />
+          <SafeAreaView className="flex-1 justify-center items-center px-6">
+            <Image source={icons.user} className="w-20 h-20 mb-6" tintColor="#FFA001" />
+            <Text className="text-white text-3xl font-black mb-2 tracking-tight">Profile</Text>
+            <Text className="text-gray-400 text-center mb-10 text-base leading-6">
+                Log in to manage your watchlist, rate movies, and create custom lists.
+            </Text>
+            
+            <TouchableOpacity 
+              onPress={() => router.push('/(auth)')}
+              className="bg-secondary w-full py-4 rounded-xl items-center shadow-lg shadow-secondary/50"
+            >
+              <Text className="text-primary font-bold text-lg">Sign In / Sign Up</Text>
+            </TouchableOpacity>
+          </SafeAreaView>
+      </View>
     );
   }
 
@@ -106,99 +129,126 @@ const Profile = () => {
   const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
 
   return (
-    <SafeAreaView className="bg-primary h-full">
-      <ScrollView className="px-4 my-6" showsVerticalScrollIndicator={false}>
-        
-        <View className="flex-row items-center justify-between mb-8 mt-4">
-          <View className="flex-row items-center">
-            <View className="w-20 h-20 rounded-full border-2 border-secondary justify-center items-center bg-black-100 overflow-hidden">
-               {userAvatar ? (
-                <Image 
-                  source={{ uri: userAvatar }} 
-                  className="w-full h-full" 
-                  resizeMode="cover" 
-                />
-              ) : (
-                <Image 
-                  source={icons.user} 
-                  className="w-12 h-12" 
-                  resizeMode="contain" 
-                  style={{ tintColor: '#fff' }}
-                />
-              )}
-            </View>
+    // STRUKTURA NAPRAWIONA (Gradient pod SafeAreaView)
+    <View className="flex-1 bg-[#1E1E2D]">
+      <LinearGradient
+        colors={["#000C1C", "#161622", "#1E1E2D"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        className="absolute w-full h-full"
+      />
+
+      <SafeAreaView className="flex-1">
+        <ScrollView className="px-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
             
-            <View className="ml-4">
-              <Text className="text-2xl font-bold text-white max-w-[200px]" numberOfLines={1}>
-                {user.name || "User"}
-              </Text>
-              <Text className="text-sm text-gray-400">{user.email}</Text>
-              <TouchableOpacity 
-                className="mt-2"
-                onPress={() => router.push('/profile/edit')}
-              >
-                <Text className="text-secondary text-sm font-semibold">Edit Profile</Text>
-              </TouchableOpacity>
+          {/* --- NAGŁÓWEK PROFILU --- */}
+          <View className="items-center mt-6 mb-8">
+            <View className="relative">
+                <View className="w-28 h-28 rounded-full border-4 border-secondary/20 justify-center items-center bg-white/5 overflow-hidden shadow-xl">
+                    {userAvatar ? (
+                        <Image 
+                        source={{ uri: userAvatar }} 
+                        className="w-full h-full" 
+                        resizeMode="cover" 
+                        />
+                    ) : (
+                        <Image 
+                        source={icons.user} 
+                        className="w-12 h-12" 
+                        resizeMode="contain" 
+                        style={{ tintColor: '#fff' }}
+                        />
+                    )}
+                </View>
+                {/* Ikona edycji */}
+                <TouchableOpacity 
+                    onPress={() => router.push('/profile/edit')}
+                    className="absolute bottom-0 right-0 bg-secondary p-2 rounded-full border-4 border-[#161622]"
+                >
+                    <Image source={icons.edit || icons.plus} className="w-4 h-4" tintColor="#000C1C" />
+                </TouchableOpacity>
             </View>
+
+            <Text className="text-3xl font-black text-white mt-4 tracking-tight text-center">
+                {user.name || "User"}
+            </Text>
+            <Text className="text-gray-400 text-sm font-medium">{user.email}</Text>
           </View>
-        </View>
 
-        {/* 4. Wyświetlanie dynamicznych wartości */}
-        <View className="flex-row justify-around bg-black-100 py-4 rounded-2xl mb-8 border border-gray-800">
-          <StatItem value={watchlistCount} label="Watchlist" />
-          <StatItem value={listsCount} label="Lists" />
-          <StatItem value={reviewsCount} label="Reviews" />
-        </View>
+          {/* --- PASEK STATYSTYK --- */}
+          <View className="flex-row justify-around bg-white/5 py-5 rounded-3xl mb-10 border border-white/10 backdrop-blur-md">
+            <StatItem value={watchlistCount} label="Watchlist" />
+            <View className="w-[1px] h-full bg-white/10" />
+            <StatItem value={listsCount} label="Lists" />
+            <View className="w-[1px] h-full bg-white/10" />
+            <StatItem value={reviewsCount} label="Reviews" />
+          </View>
 
-        <View className="mb-6">
-          <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-widest">Library</Text>
-          
-          <MenuItem 
-            icon={icons.save} 
-            title="Watchlist" 
-            onPress={() => router.push('/profile/watchlist')} 
-          />
-          <MenuItem 
-            icon={icons.star} 
-            title="Your Ratings" 
-            onPress={() => router.push('/profile/ratings')} 
-          />
-          <MenuItem 
-            icon={icons.clapperboard} 
-            title="Your Lists" 
-            onPress={() => router.push('/profile/lists')} 
-          />
-        </View>
+          {/* --- LIBRARY SECTION --- */}
+          <View className="mb-8">
+            <Text className="text-secondary font-black mb-4 uppercase text-sm tracking-widest ml-2 opacity-80">
+                My Library
+            </Text>
+            
+            <MenuItem 
+                icon={icons.bookmark} 
+                title="Watchlist" 
+                onPress={() => router.push('/profile/watchlist')} 
+            />
+            <MenuItem 
+                icon={icons.star} 
+                title="Ratings & Reviews" 
+                onPress={() => router.push('/profile/ratings')} 
+            />
+            <MenuItem 
+                icon={icons.playlist || icons.playlist} 
+                title="Custom Lists" 
+                onPress={() => router.push('/profile/lists')} 
+            />
+            
+            {/* NOWY PRZYCISK: GAME HISTORY */}
+            <MenuItem 
+                // Użyj icons.play jeśli masz, lub innej ikony np. icons.menu
+                icon={icons.play || icons.play} 
+                title="Game History" 
+                onPress={() => router.push('/profile/game-history' as any)} 
+            />
+          </View>
 
-        <View className="mb-6">
-          <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-widest">Application</Text>
-          
-          <MenuItem 
-            icon={icons.search} 
-            title="Settings" 
-            onPress={() => {}} 
-          />
-           <MenuItem 
-            icon={icons.screen} 
-            title="Appearance" 
-            onPress={() => {}} 
-          />
-        </View>
+          {/* --- APP SECTION --- */}
+          <View className="mb-8">
+            <Text className="text-secondary font-black mb-4 uppercase text-sm tracking-widest ml-2 opacity-80">
+                Settings
+            </Text>
+            
+            <MenuItem 
+                icon={icons.search} 
+                title="App Settings" 
+                onPress={() => {}} 
+            />
+             <MenuItem 
+                icon={icons.home} 
+                title="Appearance" 
+                onPress={() => {}} 
+            />
+          </View>
 
-        <View className="mt-4 mb-10">
-          <MenuItem 
-            icon={icons.user} 
-            title="Log Out" 
-            onPress={logout}
-            isDestructive={true}
-          />
-          <Text className="text-center text-gray-600 text-xs mt-6">
-            FlickMovie v1.0.0
-          </Text>
-        </View>
+          {/* --- LOGOUT --- */}
+          <View className="mt-2 mb-10">
+            <MenuItem 
+                icon={icons.user || icons.user} 
+                title="Log Out" 
+                onPress={logout}
+                isDestructive={true}
+            />
+            <Text className="text-center text-gray-600 text-xs mt-6 font-medium">
+                FlickMovie v1.0.0 • Built with Expo
+            </Text>
+          </View>
 
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 

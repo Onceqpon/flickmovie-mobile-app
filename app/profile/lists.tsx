@@ -2,9 +2,19 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// 1. Importy LinearGradient i cssInterop
+import { LinearGradient } from 'expo-linear-gradient';
+import { cssInterop } from "nativewind";
+
 import { icons } from '../../constants/icons';
 import { useGlobalContext } from '../../context/GlobalProvider';
 import { createList, deleteList, getUserLists, updateList } from '../../services/appwriteapi';
+
+// 2. Konfiguracja cssInterop dla NativeWind
+cssInterop(LinearGradient, {
+  className: "style",
+});
 
 const Lists = () => {
   const { user } = useGlobalContext();
@@ -18,7 +28,7 @@ const Lists = () => {
   // UI State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [editingList, setEditingList] = useState<any | null>(null); // Przechowuje edytowaną listę
+  const [editingList, setEditingList] = useState<any | null>(null);
 
   useEffect(() => {
     fetchLists();
@@ -38,7 +48,6 @@ const Lists = () => {
     }
   };
 
-  // Obsługa zarówno Tworzenia jak i Edycji
   const handleSubmit = async () => {
     if (!user) {
       Alert.alert("Error", "You must be logged in.");
@@ -53,16 +62,15 @@ const Lists = () => {
     setIsSubmitting(true);
     try {
       if (editingList) {
-        // --- UPDATE MODE ---
+        // UPDATE MODE
         await updateList(editingList.$id, name, description);
         Alert.alert('Success', 'List updated successfully');
       } else {
-        // --- CREATE MODE ---
+        // CREATE MODE
         await createList(user.$id, name, description);
         Alert.alert('Success', 'New list created');
       }
 
-      // Reset form and refresh
       resetForm();
       fetchLists();
     } catch (error) {
@@ -84,7 +92,7 @@ const Lists = () => {
           onPress: async () => {
             try {
               await deleteList(listId);
-              fetchLists(); // Refresh immediately
+              fetchLists();
               Alert.alert("Deleted", "List has been removed.");
             } catch (error) {
               Alert.alert("Error", "Could not delete list.");
@@ -109,17 +117,16 @@ const Lists = () => {
     setShowForm(false);
   };
 
-  // Funkcja renderująca nagłówek (Formularz + Tytuł)
   const renderHeader = () => (
     <View className="px-4 my-6">
       {/* Header with Back Button */}
       <View className="flex-row items-center mb-8">
         <TouchableOpacity 
           onPress={() => router.back()} 
-          className="bg-black-100 p-2 rounded-full mr-4"
+          className="bg-black-100 p-2 rounded-full mr-4 border border-black-200"
         >
            <Image 
-             source={icons.angle_left} 
+             source={icons.left_arrow || icons.angle_left} 
              className="w-5 h-5" 
              tintColor="white" 
              resizeMode="contain" 
@@ -132,10 +139,10 @@ const Lists = () => {
       {!showForm ? (
         <TouchableOpacity 
           onPress={() => {
-            resetForm(); // Ensure we are in "Create" mode, not "Edit"
+            resetForm();
             setShowForm(true);
           }}
-          className="bg-secondary p-4 rounded-xl flex-row justify-center items-center mb-6 shadow-md shadow-black"
+          className="bg-secondary p-4 rounded-xl flex-row justify-center items-center mb-6 shadow-md shadow-black/50"
         >
           <View className="w-6 h-6 rounded-full border-2 border-primary justify-center items-center mr-2">
             <Text className="text-primary font-pbold leading-4" style={{marginTop: -2}}>+</Text>
@@ -143,7 +150,7 @@ const Lists = () => {
           <Text className="text-primary font-pbold text-lg">Create New List</Text>
         </TouchableOpacity>
       ) : (
-        <View className="bg-black-100 p-5 rounded-2xl mb-8 border border-black-200">
+        <View className="bg-black-100 p-5 rounded-2xl mb-8 border border-black-200 shadow-lg shadow-black/40">
           <Text className="text-white font-psemibold text-lg mb-4">
             {editingList ? 'Edit List' : 'New List'}
           </Text>
@@ -155,7 +162,7 @@ const Lists = () => {
               onChangeText={setName}
               placeholder="e.g. Weekend Horror"
               placeholderTextColor="#7b7b8b"
-              className="bg-primary text-white p-4 rounded-xl font-psemibold focus:border-secondary border-2 border-transparent"
+              className="bg-black-200 text-white p-4 rounded-xl font-psemibold focus:border-secondary border-2 border-transparent"
             />
           </View>
 
@@ -167,7 +174,7 @@ const Lists = () => {
               placeholder="Short description..."
               placeholderTextColor="#7b7b8b"
               multiline
-              className="bg-primary text-white p-4 rounded-xl font-psemibold focus:border-secondary border-2 border-transparent h-24"
+              className="bg-black-200 text-white p-4 rounded-xl font-psemibold focus:border-secondary border-2 border-transparent h-24"
               textAlignVertical="top"
             />
           </View>
@@ -175,7 +182,7 @@ const Lists = () => {
           <View className="flex-row gap-4">
              <TouchableOpacity 
               onPress={resetForm}
-              className="flex-1 bg-gray-800 p-4 rounded-xl justify-center items-center"
+              className="flex-1 bg-gray-800 p-4 rounded-xl justify-center items-center border border-gray-700"
             >
               <Text className="text-white font-psemibold">Cancel</Text>
             </TouchableOpacity>
@@ -200,80 +207,87 @@ const Lists = () => {
   );
 
   return (
-    <SafeAreaView className="bg-primary flex-1">
-      <FlatList
-        data={lists}
-        keyExtractor={(item) => item.$id}
-        // Wywołujemy renderHeader() aby uniknąć problemów z klawiaturą
-        ListHeaderComponent={renderHeader()} 
-        contentContainerStyle={{ paddingBottom: 100 }}
-        renderItem={({ item }) => (
-          <View className="bg-black-100 mx-4 mb-4 p-5 rounded-2xl border border-black-200">
-            {/* Main Content (Clickable to view details later) */}
-            <TouchableOpacity 
-              className="mb-4"
-              activeOpacity={0.7}
-              onPress={() => router.push(`/profile/lists/${item.$id}` as any)}
-            >
-                <View className="flex-row justify-between items-start">
-                    <View className="flex-1 mr-2">
-                        <Text className="text-white font-psemibold text-xl mb-1">{item.name}</Text>
-                        {item.description ? (
-                            <Text className="text-gray-100 text-sm mb-3 font-pregular" numberOfLines={2}>
-                            {item.description}
-                            </Text>
-                        ) : null}
-                        <View className="bg-primary/50 self-start px-3 py-1 rounded-lg">
-                            <Text className="text-secondary text-xs font-pmedium">
-                                {item.items.length} {item.items.length === 1 ? 'item' : 'items'}
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-            </TouchableOpacity>
+    // ZMIANA 1: Główny kontener to View z fallbackiem koloru
+    <View className="flex-1 bg-[#1E1E2D]">
+      
+      {/* ZMIANA 2: Gradient poza SafeAreaView */}
+      <LinearGradient
+          colors={["#000C1C", "#161622", "#1E1E2D"]}
+          className="absolute w-full h-full"
+        />
 
-            {/* Action Buttons Row (Edit / Delete) */}
-            <View className="flex-row justify-end gap-3 border-t border-black-200 pt-3">
-                <TouchableOpacity 
-                    onPress={() => startEditing(item)}
-                    className="flex-row items-center bg-gray-800 px-3 py-2 rounded-lg"
-                >
-                    {/* Jeśli nie masz icons.edit, użyj icons.eye lub innego */}
-                    <Image source={icons.edit || icons.eye} className="w-4 h-4 mr-2" tintColor="#FFA500" resizeMode="contain"/> 
-                    <Text className="text-white text-xs font-psemibold">Edit</Text>
-                </TouchableOpacity>
+      {/* ZMIANA 3: SafeAreaView wewnątrz */}
+      <SafeAreaView className="flex-1">
+        <FlatList
+          data={lists}
+          keyExtractor={(item) => item.$id}
+          ListHeaderComponent={renderHeader()} 
+          contentContainerStyle={{ paddingBottom: 100 }}
+          renderItem={({ item }) => (
+            // Zmiana stylu karty na modern (bg-black-100, border)
+            <View className="bg-black-100 mx-4 mb-4 p-5 rounded-2xl border border-black-200 shadow-sm bg-white/10">
+              <TouchableOpacity 
+                className="mb-4"
+                activeOpacity={0.7}
+                onPress={() => router.push(`/profile/lists/${item.$id}` as any)}
+              >
+                  <View className="flex-row justify-between items-start">
+                      <View className="flex-1 mr-2">
+                          <Text className="text-white font-psemibold text-xl mb-1">{item.name}</Text>
+                          {item.description ? (
+                              <Text className="text-gray-100 text-sm mb-3 font-pregular" numberOfLines={2}>
+                              {item.description}
+                              </Text>
+                          ) : null}
+                          <View className="bg-black-200/50 self-start px-3 py-1 rounded-lg border border-black-200">
+                              <Text className="text-secondary text-xs font-pmedium">
+                                  {item.items.length} {item.items.length === 1 ? 'item' : 'items'}
+                              </Text>
+                          </View>
+                      </View>
+                  </View>
+              </TouchableOpacity>
 
-                <TouchableOpacity 
-                    onPress={() => handleDelete(item.$id, item.name)}
-                    className="flex-row items-center bg-red-900/30 px-3 py-2 rounded-lg"
-                >
-                    {/* Jeśli nie masz icons.trash, użyj icons.close */}
-                    <Image source={icons.trash || icons.close} className="w-4 h-4 mr-2" tintColor="#FF4444" resizeMode="contain"/>
-                    <Text className="text-red-400 text-xs font-psemibold">Delete</Text>
-                </TouchableOpacity>
+              <View className="flex-row justify-end gap-3 border-t border-black-200 pt-3">
+                  <TouchableOpacity 
+                      onPress={() => startEditing(item)}
+                      className="flex-row items-center bg-gray-800 px-3 py-2 rounded-lg border border-gray-700"
+                  >
+                      <Image source={icons.eye} className="w-4 h-4 mr-2" tintColor="#FFA500" resizeMode="contain"/> 
+                      <Text className="text-white text-xs font-psemibold">Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                      onPress={() => handleDelete(item.$id, item.name)}
+                      className="flex-row items-center bg-red-900/20 px-3 py-2 rounded-lg border border-red-900/30"
+                  >
+                      <Image source={icons.close} className="w-4 h-4 mr-2" tintColor="#FF4444" resizeMode="contain"/>
+                      <Text className="text-red-400 text-xs font-psemibold">Delete</Text>
+                  </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )}
-        ListEmptyComponent={() => (
-          !loading && (
-            <View className="justify-center items-center px-4 py-10">
-               <Image 
-                 source={icons.bookmark || icons.save} 
-                 className="w-16 h-16 mb-4 opacity-20" 
-                 tintColor="white" 
-                 resizeMode="contain"
-               />
-               <Text className="text-white text-xl font-psemibold text-center mb-2">No lists yet</Text>
-               <Text className="text-gray-100 text-center font-pmedium max-w-[250px]">
-                 Create your first list to group your favorite movies and TV shows.
-               </Text>
-            </View>
-          )
-        )}
-        refreshing={loading}
-        onRefresh={fetchLists}
-      />
-    </SafeAreaView>
+          )}
+          ListEmptyComponent={() => (
+            !loading && (
+              <View className="justify-center items-center px-4 py-10">
+                 <Image 
+                   source={icons.bookmark} 
+                   className="w-16 h-16 mb-4 opacity-20" 
+                   tintColor="white" 
+                   resizeMode="contain"
+                 />
+                 <Text className="text-white text-xl font-psemibold text-center mb-2">No lists yet</Text>
+                 <Text className="text-gray-100 text-center font-pmedium max-w-[250px]">
+                   Create your first list to group your favorite movies and TV shows.
+                 </Text>
+              </View>
+            )
+          )}
+          refreshing={loading}
+          onRefresh={fetchLists}
+        />
+      </SafeAreaView>
+    </View>
   );
 };
 

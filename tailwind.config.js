@@ -5,9 +5,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#001D3D",
+        primary: "#12214e",
         secondary: "#A8B5DB",
-        'main-bg': '#000C1C',
+        'main-bg': '#14233c',
         'main-color': '#001d3d',
         'movie-card-bg': '#1b263b',
         'star-bg': '#ff7001',

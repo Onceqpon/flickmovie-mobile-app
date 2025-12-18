@@ -8,6 +8,7 @@ const WATCHLIST_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WATCHLIST_COLLE
 const WATCHLIST_SERIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WATCHLIST_SERIES_COLLECTION_ID!;
 const REVIEWS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID!;
 const LISTS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_LISTS_COLLECTION_ID!;
+const GAME_HISTORY_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_GAME_HISTORY_COLLECTION_ID
 
 const STORAGE_ID = process.env.EXPO_PUBLIC_APPWRITE_STORAGE_ID!;
 const ENDPOINT = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!;
@@ -680,5 +681,74 @@ export const getReviewsCount = async (userId: string) => {
   } catch (error) {
     console.error("Error fetching reviews count:", error);
     return 0;
+  }
+};
+
+export const saveGameToHistory = async (userId: string, items: any[]) => {
+  try {
+    // Appwrite nie obsługuje natywnie tablic obiektów w prostych atrybutach,
+    // więc konwertujemy tablicę filmów na String JSON.
+    const jsonItems = JSON.stringify(items);
+
+    const newEntry = await database.createDocument(
+      DATABASE_ID,
+      GAME_HISTORY_COLLECTION_ID!, // Wykrzyknik zapewnia TS, że zmienna istnieje
+      ID.unique(),
+      {
+        user_id: userId,
+        items: jsonItems
+      }
+    );
+    return newEntry;
+  } catch (error: any) {
+    console.error("Error saving game history:", error);
+    throw new Error(error.message);
+  }
+};
+
+// 2. Pobierz historię gier użytkownika
+export const getUserGameHistory = async (userId: string) => {
+  console.log("DEBUG: Próba pobrania historii dla ID:", userId, "Typ:", typeof userId);
+  
+  if (!userId) {
+      console.error("BŁĄD: userId jest puste!");
+      return []; // Zwróć pustą tablicę, aby nie wywoływać błędu API
+  }
+
+  try {
+    const result = await database.listDocuments(
+      DATABASE_ID,
+      GAME_HISTORY_COLLECTION_ID!,
+      [
+        Query.equal('user_id', userId),
+        Query.orderDesc('$createdAt') // Najnowsze gry na górze
+      ]
+    );
+
+    // Parsujemy string 'items' z powrotem na obiekt JSON (tablicę)
+    const documents = result.documents.map((doc: any) => ({
+      ...doc,
+      items: JSON.parse(doc.items) 
+    }));
+
+    return documents;
+  } catch (error: any) {
+    console.error("Error fetching game history:", error);
+    throw new Error(error.message);
+  }
+};
+
+// 3. Usuń wpis z historii
+export const deleteGameHistoryEntry = async (documentId: string) => {
+  try {
+    await database.deleteDocument(
+      DATABASE_ID,
+      GAME_HISTORY_COLLECTION_ID!,
+      documentId
+    );
+    return true;
+  } catch (error: any) {
+    console.error("Error deleting game history:", error);
+    throw new Error(error.message);
   }
 };

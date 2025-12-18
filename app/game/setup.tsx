@@ -1,11 +1,11 @@
 import { icons } from "@/constants/icons";
 // CHANGE: Importing separated genre lists
 import { MOVIE_GENRES, TV_GENRES, WATCH_PROVIDERS } from "@/services/tmdbapi";
+import { LinearGradient } from "expo-linear-gradient"; // 1. IMPORT GRADIENTU
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, LayoutAnimation, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 
 type Step = 0 | 1 | 2; // 0: Type, 1: VOD, 2: Genres
 type ContentType = 'movie' | 'tv' | null;
@@ -166,57 +166,67 @@ export default function GameSetup() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-primary px-5">
-      {/* HEADER */}
-      <View className="flex-row items-center justify-between mt-4 mb-6">
-        <TouchableOpacity onPress={handleBack} className="p-2 bg-black-100 rounded-full border border-gray-800">
-           <Image source={icons.left_arrow} className="w-5 h-5" tintColor="white" />
-        </TouchableOpacity>
-        
-        {/* Progress bar (dots) */}
-        <View className="flex-row gap-2">
-           {[0, 1, 2].map(step => (
-                <View 
-                    key={step} 
-                    className={`h-2 rounded-full transition-all ${step === currentStep ? 'w-8 bg-secondary' : 'w-2 bg-gray-700'}`} 
-                />
-            ))}
-        </View>
-        
-        {/* Empty view for symmetry */}
-        <View className="w-9" />
-      </View>
+    <View className="flex-1 bg-primary">
+        {/* 2. TŁO GRADIENTOWE */}
+        <LinearGradient
+                colors={["#000C1C", "#161622", "#1E1E2D"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                className="absolute w-full h-full"
+              />
 
-      {/* MAIN CONTENT */}
-      <View className="flex-1">
-        {currentStep === 0 && renderStepType()}
-        {currentStep === 1 && renderStepVOD()}
-        {currentStep === 2 && renderStepGenres()}
-      </View>
-
-      {/* BOTTOM BUTTON (Only for steps 1 and 2, because step 0 is automatic) */}
-      {currentStep > 0 && (
-          <View className="mb-4 pt-4 border-t border-gray-900">
-            <TouchableOpacity
-              onPress={handleNextStep}
-              className={`w-full py-4 rounded-xl items-center flex-row justify-center ${
-                 (currentStep === 2 && selectedGenres.length === 0) 
-                 ? "bg-gray-700" 
-                 : "bg-secondary"
-              }`}
-              disabled={currentStep === 2 && selectedGenres.length === 0}
-            >
-              <Text className={`font-bold text-lg mr-2 ${
-                 (currentStep === 2 && selectedGenres.length === 0) ? "text-gray-400" : "text-primary"
-              }`}>
-                {currentStep === 2 ? "Start Game" : "Next"}
-              </Text>
-              {currentStep < 2 && (
-                  <Image source={icons.left_arrow} className="w-4 h-4 rotate-180" tintColor="#161622" />
-              )}
+        <SafeAreaView className="flex-1 px-5">
+        {/* HEADER */}
+        <View className="flex-row items-center justify-between mt-4 mb-6">
+            <TouchableOpacity onPress={handleBack} className="p-2 bg-black-100 rounded-full border border-gray-800">
+                <Image source={icons.left_arrow} className="w-5 h-5" tintColor="white" />
             </TouchableOpacity>
-          </View>
-      )}
-    </SafeAreaView>
+            
+            {/* Progress bar (dots) */}
+            <View className="flex-row gap-2">
+                {[0, 1, 2].map(step => (
+                    <View 
+                        key={step} 
+                        className={`h-2 rounded-full transition-all ${step === currentStep ? 'w-8 bg-secondary' : 'w-2 bg-gray-700'}`} 
+                    />
+                ))}
+            </View>
+            
+            {/* Empty view for symmetry */}
+            <View className="w-9" />
+        </View>
+
+        {/* MAIN CONTENT */}
+        <View className="flex-1">
+            {currentStep === 0 && renderStepType()}
+            {currentStep === 1 && renderStepVOD()}
+            {currentStep === 2 && renderStepGenres()}
+        </View>
+
+        {/* BOTTOM BUTTON (Only for steps 1 and 2, because step 0 is automatic) */}
+        {currentStep > 0 && (
+            <View className="mb-4 pt-4 border-t border-gray-900">
+                <TouchableOpacity
+                onPress={handleNextStep}
+                className={`w-full py-4 rounded-xl items-center flex-row justify-center ${
+                    (currentStep === 2 && selectedGenres.length === 0) 
+                    ? "bg-gray-700" 
+                    : "bg-secondary"
+                }`}
+                disabled={currentStep === 2 && selectedGenres.length === 0}
+                >
+                <Text className={`font-bold text-lg mr-2 ${
+                    (currentStep === 2 && selectedGenres.length === 0) ? "text-gray-400" : "text-primary"
+                }`}>
+                    {currentStep === 2 ? "Start Game" : "Next"}
+                </Text>
+                {currentStep < 2 && (
+                    <Image source={icons.left_arrow} className="w-4 h-4 rotate-180" tintColor="#161622" />
+                )}
+                </TouchableOpacity>
+            </View>
+        )}
+        </SafeAreaView>
+    </View>
   );
 }

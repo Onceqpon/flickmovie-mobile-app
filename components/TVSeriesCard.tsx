@@ -60,7 +60,7 @@ const TVSeriesCard = ({
           tintColor="#FFD700"
         />
         <Text className="text-xs text-white font-bold uppercase">
-          {(vote_average / 2).toFixed(1)}
+          {(vote_average).toFixed(1)}
         </Text>
       </View>
 

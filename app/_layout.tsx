@@ -111,7 +111,19 @@ export default function RootLayout() {
               options={{
                 headerShown: false,
               }}
-            />   
+            />
+            <Stack.Screen
+              name="profile/game-history"
+              options={{
+                headerShown: false,
+              }}
+            />
+             <Stack.Screen
+              name="category/[id]"
+              options={{
+                headerShown: false,
+              }}
+            />     
         </Stack>
         <StatusBar hidden={true} style="light" backgroundColor="#161622" />
 

@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -11,23 +12,24 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Reviews from "@/components/Reviews";
+import SaveToListModal from "@/components/SaveToListModal";
 import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
 import { fetchSeasonDetails, fetchTVSeriesDetails } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
-import SaveToListModal from '../../components/SaveToListModal'; // <--- IMPORT
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
+// Komponent do wyświetlania pojedynczej informacji
 interface SeriesInfoProps {
   label: string;
   value?: string | number | null;
 }
 
 const SeriesInfo = ({ label, value }: SeriesInfoProps) => (
-  <View className="flex-col items-start justify-center mt-5">
-    <Text className="text-white font-normal text-sm">{label}</Text>
-    <Text className="text-white font-bold text-sm mt-2">
+  <View className="mb-4">
+    <Text className="text-gray-400 text-xs uppercase tracking-wider mb-1">{label}</Text>
+    <Text className="text-white font-semibold text-base">
       {value || "N/A"}
     </Text>
   </View>
@@ -40,19 +42,20 @@ const Details = () => {
   const seriesId = Array.isArray(id) ? id[0] : (id as string | undefined);
   const shouldFetch = !!seriesId;
 
-  // --- STATE DLA MODALA ---
+  // --- STATE ---
   const [modalVisible, setModalVisible] = useState(false);
-
   const [expandedSeasonId, setExpandedSeasonId] = useState<number | null>(null);
   const [episodes, setEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
 
+  // Pobieranie danych serialu
   const { data: series, loading, error } = useLoadData(
     () => fetchTVSeriesDetails(seriesId!),
     [seriesId],
     shouldFetch
   );
 
+  // Obsługa kliknięcia w sezon (pobieranie epizodów)
   const handleSeasonPress = async (seasonNumber: number, seasonId: number) => {
     if (!seriesId) return;
 
@@ -79,146 +82,145 @@ const Details = () => {
     }
   };
 
-  if (!seriesId) {
-    return (
-      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
-        <Text className="text-white text-lg">Brak ID serialu.</Text>
-        <TouchableOpacity onPress={router.back}>
-          <Text className="text-accent mt-4">Wróć</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
+  if (!seriesId) return null;
 
   if (loading)
     return (
       <SafeAreaView className="bg-primary flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#FF8C00" />
+        <ActivityIndicator size="large" color="#FF9C01" />
       </SafeAreaView>
     );
 
-  if (error) {
+  if (error || !series) {
     return (
       <SafeAreaView className="bg-primary flex-1 justify-center items-center">
-        <Text className="text-red-500 text-lg">Błąd: {error.message}</Text>
+        <Text className="text-red-500 text-lg mb-4">
+          {error ? `Error: ${error.message}` : "Series not found"}
+        </Text>
         <TouchableOpacity onPress={router.back}>
-          <Text className="text-accent mt-4">Wróć</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
-
-  if (!series) {
-    return (
-      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
-        <Text className="text-white text-lg">Serial nie znaleziony.</Text>
-        <TouchableOpacity onPress={router.back}>
-          <Text className="text-accent mt-4">Wróć</Text>
+          <Text className="text-secondary font-bold">Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   return (
-    <View className="bg-movie-card-bg flex-1">
-      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
-        <View>
+    <View className="bg-primary flex-1">
+      <ScrollView 
+        contentContainerStyle={{ paddingBottom: 100 }} 
+        showsVerticalScrollIndicator={false}
+      >
+        {/* --- HEADER: PLAKAT + GRADIENT --- */}
+        <View className="relative w-full h-[550px]">
           <Image
             source={{
               uri: `${TMDB_IMAGE_BASE_URL}${series.poster_path}`,
             }}
-            className="w-full h-[550px]"
-            resizeMode="stretch"
+            className="w-full h-full"
+            resizeMode="cover"
+          />
+          
+          {/* Gradient od dołu */}
+          <LinearGradient
+            colors={["transparent", "#161622"]}
+            style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 300 }}
           />
 
-          {/* --- Kontener Przycisków Akcji --- */}
-          <View className="absolute bottom-5 right-5 flex-row gap-4">
-            
-            {/* Przycisk Watchlist */}
-            <View className="rounded-full size-14 bg-white flex items-center justify-center shadow-lg">
-              <WatchlistButton 
-                item={{
-                  id: series.id,
-                  name: series.name,
-                  poster_path: series.poster_path || "",
-                  vote_average: series.vote_average || 0
-                }} 
-                type="series"
-              />
-            </View>
+          {/* Przyciski Akcji */}
+          <View className="absolute bottom-10 right-5 flex-row gap-4 z-10">
+             <View className="rounded-full size-14 bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10">
+                <WatchlistButton 
+                  item={{
+                    id: series.id,
+                    name: series.name,
+                    poster_path: series.poster_path || "",
+                    vote_average: series.vote_average || 0
+                  }} 
+                  type="series"
+                />
+             </View>
 
-            {/* --- NOWY PRZYCISK: Dodaj do Listy --- */}
-            <TouchableOpacity 
-              onPress={() => setModalVisible(true)}
-              className="rounded-full size-14 bg-white flex items-center justify-center shadow-lg"
-              activeOpacity={0.8}
-            >
-               <Image 
-                 source={icons.plus} 
-                 className="size-6" 
-                 resizeMode="contain" 
-                 tintColor="#FF9C01" // Pomarańczowy akcent
-               />
-            </TouchableOpacity>
-
+             <TouchableOpacity 
+                onPress={() => setModalVisible(true)}
+                className="rounded-full size-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
+                activeOpacity={0.8}
+             >
+                <Image 
+                  source={icons.plus} 
+                  className="size-7" 
+                  resizeMode="contain" 
+                  tintColor="#161622" 
+                />
+             </TouchableOpacity>
           </View>
         </View>
 
-        <View className="flex-col items-start justify-center mt-5 px-5">
-          <Text className="text-white font-bold text-xl">{series.name}</Text>
-          <View className="flex-row items-center gap-x-1 mt-2">
-            <Text className="text-white text-sm">
-              {series.first_air_date?.split("-")[0]} •
+        {/* --- TREŚĆ --- */}
+        <View className="px-5 -mt-6">
+          <Text className="text-white font-black text-3xl mb-2 leading-tight">
+            {series.name}
+          </Text>
+
+          {/* Meta Info */}
+          <View className="flex-row items-center flex-wrap gap-3 mb-5">
+            <Text className="text-gray-300 font-medium">
+              {series.first_air_date?.split("-")[0]}
             </Text>
-            <Text className="text-white text-sm">
-              {series.number_of_seasons} Seasons
+            <View className="w-1 h-1 bg-gray-500 rounded-full" />
+            <Text className="text-gray-300 font-medium">
+              {series.number_of_seasons} {series.number_of_seasons === 1 ? 'Season' : 'Seasons'}
             </Text>
+            <View className="w-1 h-1 bg-gray-500 rounded-full" />
+            <View className="flex-row items-center gap-1 bg-white/10 px-2 py-0.5 rounded text-xs">
+               <Image source={icons.star} className="size-3.5" tintColor="#FF9C01" />
+               <Text className="text-secondary font-bold">{series.vote_average?.toFixed(1)}</Text>
+            </View>
           </View>
 
-          <View className="flex-row items-center bg-star-bg px-2 py-1 rounded-md gap-x-1 mt-2">
-            <Image source={icons.star} className="size-4" tintColor="#FFD700" />
-
-            <Text className="text-white font-bold text-sm">
-              {Math.round(series.vote_average ?? 0)}/10
-            </Text>
-
-            <Text className="text-white text-sm">
-              ({series.vote_count} votes)
-            </Text>
+          {/* Gatunki */}
+          <View className="flex-row flex-wrap gap-2 mb-6">
+            {series.genres?.map((g) => (
+              <View key={g.id} className="bg-main-bg px-3 py-1.5 rounded-lg border border-gray-800">
+                <Text className="text-gray-300 text-xs font-medium">{g.name}</Text>
+              </View>
+            ))}
           </View>
 
-          <SeriesInfo label="Overview" value={series.overview} />
-          <SeriesInfo
-            label="Genres"
-            value={series.genres?.map((g) => g.name).join(" • ") || "N/A"}
-          />
+          {/* Opis */}
+          <Text className="text-white font-bold text-lg mb-2">Overview</Text>
+          <Text className="text-gray-300 text-base leading-6 mb-6">
+            {series.overview}
+          </Text>
 
-          <View className="flex flex-row justify-between w-full">
-            <SeriesInfo
-              label="Total Episodes"
-              value={series.number_of_episodes}
-            />
-            <SeriesInfo label="Status" value={series.status} />
+          {/* Info Grid - POPRAWKA: Usunięto 'Type', dodano 'Production' */}
+          <View className="flex-row justify-between bg-main-bg p-4 rounded-2xl mb-8 border border-gray-800">
+             <View className="flex-1 mr-2">
+                <SeriesInfo label="Episodes" value={series.number_of_episodes} />
+                <SeriesInfo label="Status" value={series.status} />
+             </View>
+             <View className="flex-1">
+                <SeriesInfo label="Network" value={series.networks?.[0]?.name} />
+                {/* Zastąpiono błędne 'series.type' polem 'production_companies' */}
+                <SeriesInfo 
+                   label="Production" 
+                   value={series.production_companies?.[0]?.name} 
+                />
+             </View>
           </View>
 
-          <SeriesInfo
-            label="Networks"
-            value={series.networks?.map((c) => c.name).join(" • ") || "N/A"}
-          />
-
-          <View className="mt-8 w-full">
-            <Text className="text-white font-bold text-lg mb-4">Seasons</Text>
-
+          {/* --- SEZONY --- */}
+          <Text className="text-white font-bold text-xl mb-4">Seasons</Text>
+          <View className="gap-y-4 mb-8">
             {series.seasons && series.seasons.length > 0 ? (
               series.seasons.map((season) => (
-                <View key={season.id} className="mb-4">
+                <View 
+                  key={season.id} 
+                  className={`rounded-2xl overflow-hidden border ${expandedSeasonId === season.id ? 'border-secondary/50 bg-main-bg' : 'border-transparent bg-main-bg'}`}
+                >
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => handleSeasonPress(season.season_number, season.id)}
-                    className="flex-row p-3 rounded-xl items-center"
-                    style={{
-                        backgroundColor: expandedSeasonId === season.id ? "#374151" : "#1E1E2D"
-                    }}
+                    className="flex-row p-3"
                   >
                     <Image
                       source={{
@@ -226,41 +228,42 @@ const Details = () => {
                           ? `${TMDB_IMAGE_BASE_URL}${season.poster_path}`
                           : "https://placehold.co/600x400/1a1a1a/FFFFFF.png",
                       }}
-                      className="w-20 h-28 rounded-lg"
+                      className="w-20 h-28 rounded-xl bg-gray-800"
                       resizeMode="cover"
                     />
 
-                    <View className="ml-4 flex-1">
+                    <View className="ml-4 flex-1 justify-center">
                       <Text className="text-white font-bold text-lg">
                         {season.name}
                       </Text>
-
-                      <View className="flex-row items-center mt-1 gap-x-2">
-                        <Text className="text-accent font-semibold text-white text-sm">
+                      
+                      <View className="flex-row items-center mt-1 gap-2">
+                        <Text className="text-secondary font-semibold text-sm">
                           {season.episode_count} Episodes
                         </Text>
                         {season.air_date && (
-                          <Text className="text-gray-400 text-xs">
-                            ({season.air_date.split("-")[0]})
-                          </Text>
+                           <Text className="text-gray-500 text-xs">
+                             | {season.air_date.split("-")[0]}
+                           </Text>
                         )}
                       </View>
+                      
+                      <Text className="text-gray-500 text-xs mt-3 uppercase font-bold tracking-widest">
+                         {expandedSeasonId === season.id ? "Hide Episodes" : "Show Episodes"}
+                      </Text>
                     </View>
                   </TouchableOpacity>
 
+                  {/* Accordion Episodes */}
                   {expandedSeasonId === season.id && (
-                    <View className="bg-gray-900 rounded-b-xl p-3 mt-1 mx-1">
+                    <View className="bg-black/20 p-2 border-t border-gray-800">
                       {episodesLoading ? (
-                        <ActivityIndicator
-                          size="small"
-                          color="#FF8C00"
-                          className="py-4"
-                        />
+                        <ActivityIndicator size="small" color="#FF9C01" className="py-4" />
                       ) : (
                         episodes.map((ep) => (
                           <View
                             key={ep.id}
-                            className="flex-row items-center py-3 border-b border-gray-800"
+                            className="flex-row items-center p-2 mb-1 rounded-lg hover:bg-white/5"
                           >
                             <Image
                               source={{
@@ -268,29 +271,25 @@ const Details = () => {
                                   ? `${TMDB_IMAGE_BASE_URL}${ep.still_path}`
                                   : "https://placehold.co/100x60/333/fff.png",
                               }}
-                              className="w-24 h-14 rounded mr-3"
+                              className="w-28 h-16 rounded-lg bg-gray-800 mr-3"
                               resizeMode="cover"
                             />
-
                             <View className="flex-1">
-                              <Text className="text-white font-bold text-sm">
+                              <Text className="text-white font-bold text-sm" numberOfLines={1}>
                                 {ep.episode_number}. {ep.name}
                               </Text>
-                              <View className="flex-row justify-between mt-1">
-                                <Text className="text-gray-400 text-xs">
-                                  {ep.air_date}
-                                </Text>
-                                <View className="flex-row items-center">
-                                  <Image
-                                    source={icons.star}
-                                    className="size-3 mr-1"
-                                    tintColor="#FFD700"
-                                  />
-                                  <Text className="text-white text-xs">
-                                    {ep.vote_average.toFixed(1)}
-                                  </Text>
-                                </View>
+                              <View className="flex-row justify-between items-center mt-1">
+                                <Text className="text-gray-500 text-xs">{ep.air_date}</Text>
+                                {ep.vote_average > 0 && (
+                                  <View className="flex-row items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded">
+                                     <Image source={icons.star} className="size-2.5" tintColor="#FF9C01" />
+                                     <Text className="text-gray-300 text-[10px] font-bold">{ep.vote_average.toFixed(1)}</Text>
+                                  </View>
+                                )}
                               </View>
+                              <Text className="text-gray-400 text-xs mt-1 line-clamp-2" numberOfLines={2}>
+                                {ep.overview}
+                              </Text>
                             </View>
                           </View>
                         ))
@@ -300,33 +299,35 @@ const Details = () => {
                 </View>
               ))
             ) : (
-              <Text className="text-gray-400">
-                No season information available.
-              </Text>
+               <View className="p-4 bg-main-bg rounded-xl">
+                 <Text className="text-gray-400 text-center">No season info available.</Text>
+               </View>
             )}
           </View>
         </View>
+
         <Reviews seriesId={Number(id)} title={series.name} posterPath={series.poster_path || ""} />
       </ScrollView>
 
+      {/* BACK BUTTON */}
       <TouchableOpacity
-        className="absolute top-12 left-5 bg-white rounded-full p-2 z-50 backdrop-blur-lg"
+        className="absolute top-14 left-5 bg-black/40 backdrop-blur-md rounded-full p-2.5 z-50 border border-white/10"
         onPress={router.back}
       >
         <Image
           source={icons.angle_left}
           className="size-6"
           resizeMode="contain"
-          tintColor="#000000"
+          tintColor="#FFFFFF"
         />
       </TouchableOpacity>
 
-      {/* --- MODAL DO WYBORU LISTY --- */}
+      {/* MODAL */}
       <SaveToListModal 
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         mediaId={series.id}
-        mediaType="tv" // <--- WAŻNE: typ 'tv'
+        mediaType="tv"
       />
     </View>
   );

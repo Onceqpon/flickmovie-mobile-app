@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Modal, Text, TouchableOpacity, View } from 'react-native';
-import { icons } from '../constants/icons'; // Upewnij się, że masz tu ikonę 'check' lub 'tick', jeśli nie - użyjemy innej
+import { icons } from '../constants/icons';
 import { useGlobalContext } from '../context/GlobalProvider';
 import { addItemToList, getUserLists, removeItemFromList } from '../services/appwriteapi';
 
@@ -15,8 +15,6 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
   const { user } = useGlobalContext();
   const [lists, setLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Przechowujemy ID listy, która jest aktualnie przetwarzana (dodawana/usuwana), aby pokazać spinner
   const [processingListId, setProcessingListId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,25 +38,16 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
 
   const handleToggleList = async (listId: string, currentItems: string[]) => {
     setProcessingListId(listId);
-    
-    // Tworzymy identyfikator w formacie bazy danych
     const itemString = `${mediaType}:${mediaId}`;
     const isOnList = currentItems.includes(itemString);
 
     try {
       if (isOnList) {
-        // --- USUWANIE ---
         await removeItemFromList(listId, mediaId.toString(), mediaType);
-        // Alert.alert('Usunięto', 'Film został usunięty z listy.'); // Opcjonalne powiadomienie
       } else {
-        // --- DODAWANIE ---
         await addItemToList(listId, mediaId.toString(), mediaType);
-        // Alert.alert('Dodano', 'Film został dodany do listy.'); // Opcjonalne powiadomienie
       }
-      
-      // Odśwież listy, aby zaktualizować UI (pokazać/ukryć ptaszka)
       await fetchLists();
-      
     } catch (error) {
       console.error(error);
       Alert.alert('Błąd', 'Wystąpił problem podczas aktualizacji listy.');
@@ -68,7 +57,6 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
   };
 
   const renderItem = ({ item }: { item: any }) => {
-    // Sprawdzamy czy ten konkretny film jest na tej liście
     const itemString = `${mediaType}:${mediaId}`;
     const isOnList = item.items.includes(itemString);
 
@@ -76,16 +64,22 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
       <TouchableOpacity
         onPress={() => handleToggleList(item.$id, item.items)}
         disabled={processingListId === item.$id}
-        className={`p-4 rounded-xl mb-3 flex-row justify-between items-center border ${
-          isOnList ? 'bg-black-200 border-secondary' : 'bg-black-100 border-black-200'
+        activeOpacity={0.7}
+        // ZMIANA: Dodano border-2 dla wyraźniejszego zaznaczenia i ujednolicono tło
+        className={`p-4 rounded-2xl mb-3 flex-row justify-between items-center border-2 ${
+          isOnList 
+            ? 'bg-black-100 border-secondary'  // Aktywny: Pomarańczowa ramka
+            : 'bg-black-100 border-black-200'  // Nieaktywny: Ciemna ramka
         }`}
       >
         <View className="flex-1 pr-4">
-          <Text className={`font-psemibold text-lg ${isOnList ? 'text-secondary' : 'text-white'}`}>
+          {/* ZMIANA: Tekst pozostaje biały dla czytelności, kolor zmienia tylko ikona i ramka,
+              ale jeśli wolisz pomarańczowy tekst, odkomentuj logikę poniżej */}
+          <Text className={`font-psemibold text-lg ${isOnList ? 'text-secondary' : 'text-white'}`} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text className="text-gray-100 text-xs">
-            {item.items.length} pozycji
+          <Text className="text-gray-100 text-xs font-pregular mt-1">
+            {item.items.length} {item.items.length === 1 ? 'pozycja' : 'pozycji'}
           </Text>
         </View>
 
@@ -94,24 +88,23 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
           <ActivityIndicator color="#FF9C01" />
         ) : (
           <View className={`w-8 h-8 rounded-full justify-center items-center ${
-            isOnList ? 'bg-secondary' : 'bg-black-100 border border-gray-500'
+            isOnList 
+              ? 'bg-secondary border border-secondary' // Wypełnione pomarańczowe
+              : 'bg-transparent border-2 border-black-200' // Puste z obwódką (bardziej eleganckie)
           }`}>
              {isOnList ? (
-                // Ikona "Sprawdzone" / "Obecne"
-                // Jeśli nie masz icons.check, użyj icons.bookmark lub po prostu tekst "V"
                 <Image 
-                  source={icons.save} 
+                  source={icons.save} // Lub icons.check / icons.tick
                   className="w-4 h-4" 
                   resizeMode="contain" 
-                  tintColor="#161622" // Ciemny kolor na pomarańczowym tle
+                  tintColor="#161622" // Ciemny kolor ikony na pomarańczowym tle (kontrast)
                 />
              ) : (
-                // Ikona "Plus" / "Dodaj"
                <Image 
-                  source={icons.playlist} // Upewnij się, że masz tę ikonę, lub użyj Text "+"
+                  source={icons.plus} // Ikona plusa (jeśli masz) lub playlist
                   className="w-4 h-4" 
                   resizeMode="contain" 
-                  tintColor="#CDCDE0" 
+                  tintColor="#CDCDE0" // Jasnoszary
                />
              )}
           </View>
@@ -122,7 +115,7 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
 
   return (
     <Modal
-      animationType="slide"
+      animationType="fade" // Zmiana na fade lub slide w zależności od preferencji
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
@@ -134,39 +127,48 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
            activeOpacity={1} 
         />
         
-        <View className="bg-primary h-[55%] rounded-t-3xl p-5 border-t border-black-200">
+        <View className="bg-main-bg h-[55%] rounded-t-[30px] p-6 border-t border-black-200 shadow-xl">
           
           {/* Nagłówek */}
           <View className="flex-row justify-between items-center mb-6">
             <View>
-              <Text className="text-white text-xl font-psemibold">Zarządzaj listami</Text>
-              <Text className="text-gray-100 text-xs font-pregular">Kliknij, aby dodać lub usunąć</Text>
+              <Text className="text-white text-xl font-psemibold">Zapisz do listy</Text>
+              <Text className="text-gray-100 text-sm font-pregular mt-1">Wybierz kolekcję</Text>
             </View>
             
-            <TouchableOpacity onPress={onClose} className="p-2 bg-black-100 rounded-full">
+            <TouchableOpacity onPress={onClose} className="p-2 bg-black-100 rounded-full border border-black-200">
                <Image 
-                 source={icons.close} 
-                 className="w-5 h-5" 
+                 source={icons.close} // Upewnij się, że masz ikonę 'close' (krzyżyk)
+                 className="w-4 h-4" 
                  resizeMode="contain" 
-                 tintColor="white" 
+                 tintColor="#CDCDE0" 
                />
             </TouchableOpacity>
           </View>
 
           {/* Lista kolekcji */}
           {loading ? (
-            <ActivityIndicator size="large" color="#FF9C01" className="mt-10" />
+            <View className="flex-1 justify-center items-center">
+                <ActivityIndicator size="large" color="#FF9C01" />
+            </View>
           ) : (
             <FlatList
               data={lists}
               keyExtractor={(item) => item.$id}
-              contentContainerStyle={{ paddingBottom: 20 }}
+              contentContainerStyle={{ paddingBottom: 40 }}
+              showsVerticalScrollIndicator={false}
               renderItem={renderItem}
               ListEmptyComponent={() => (
-                <View className="items-center mt-10">
-                   <Text className="text-gray-100 text-center font-pmedium">Nie masz jeszcze żadnych list.</Text>
-                   <Text className="text-gray-100 text-center text-xs mt-2 max-w-[200px]">
-                     Przejdź do profilu {'>'} Moje Listy, aby utworzyć pierwszą kolekcję.
+                <View className="items-center justify-center mt-10 px-4">
+                   <Image 
+                      source={icons.bookmark} 
+                      className="w-12 h-12 mb-4 opacity-50"
+                      resizeMode="contain"
+                      tintColor="#CDCDE0"
+                   />
+                   <Text className="text-gray-100 text-center font-pmedium text-lg">Brak list</Text>
+                   <Text className="text-gray-100 text-center text-sm mt-2 font-pregular">
+                     Stwórz swoją pierwszą listę w profilu, aby dodawać do niej filmy.
                    </Text>
                 </View>
               )}

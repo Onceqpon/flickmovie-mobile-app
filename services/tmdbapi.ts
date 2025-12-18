@@ -19,27 +19,32 @@ export const fetchMovies = async ({
   query,
   genreId,
   sortBy,
+  page = 1, // DODANO: Domyślna strona 1
 }: {
   query?: string;
   genreId?: number | string | null;
   sortBy?: string;
+  page?: number; // DODANO: Typ parametru
 }): Promise<Movie[]> => {
   let endpoint;
 
   if (query) {
-    endpoint = `${TMDB_CONFIG.BASE_URL}/search/movie?query=${encodeURIComponent(query)}`;
+    endpoint = `${TMDB_CONFIG.BASE_URL}/search/movie?query=${encodeURIComponent(query)}&page=${page}`;
     endpoint += "&vote_count.gte=1";
   } else if (genreId) {
-    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=popularity.desc&with_genres=${genreId}`;
+    // DODANO: &page=${page}
+    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=popularity.desc&with_genres=${genreId}&page=${page}`;
   } else if (sortBy) {
-    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=${sortBy}`;
+    // DODANO: &page=${page}
+    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=${sortBy}&page=${page}`;
     endpoint += "&vote_count.gte=200";
   } else {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     const dateString = oneYearAgo.toISOString().split("T")[0];
 
-    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=vote_average.desc&primary_release_date.gte=${dateString}&vote_count.gte=200`;
+    // DODANO: &page=${page}
+    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=vote_average.desc&primary_release_date.gte=${dateString}&vote_count.gte=200&page=${page}`;
   }
 
   try {
@@ -55,9 +60,11 @@ export const fetchMovies = async ({
     const data = await response.json();
 
     if (query) {
-        return data.results.filter((item: any) => item.vote_count > 0 && item.poster_path);
+      return data.results.filter(
+        (item: any) => item.vote_count > 0 && item.poster_path
+      );
     }
-    
+
     return data.results;
   } catch (error) {
     console.error("Error fetching movies:", error);
@@ -103,10 +110,12 @@ export const fetchTVSeries = async ({
   query,
   genreId,
   sortBy,
+  page = 1, // DODANO: domyślna strona
 }: {
   query?: string;
   genreId?: number | string | null;
   sortBy?: string;
+  page?: number; // DODANO: typ
 }): Promise<TVSeries[]> => {
   let endpoint;
   let sortParam = sortBy || SORT_OPTIONS.POPULARITY;
@@ -119,17 +128,20 @@ export const fetchTVSeries = async ({
     sortParam = "popularity.desc";
   }
 
+  // Budowanie endpointów z uwzględnieniem PAGE
   if (query) {
-    endpoint = `${TMDB_CONFIG.BASE_URL}/search/tv?query=${encodeURIComponent(query)}`;
+    endpoint = `${TMDB_CONFIG.BASE_URL}/search/tv?query=${encodeURIComponent(query)}&page=${page}`;
     endpoint += "&vote_count.gte=1";
   } else if (genreId) {
-    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/tv?with_genres=${genreId}&sort_by=${sortParam}`;
+    // DODANO: &page=${page}
+    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/tv?with_genres=${genreId}&sort_by=${sortParam}&page=${page}`;
   } else if (sortBy) {
-    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/tv?sort_by=${sortParam}`;
+    // DODANO: &page=${page}
+    endpoint = `${TMDB_CONFIG.BASE_URL}/discover/tv?sort_by=${sortParam}&page=${page}`;
     endpoint += "&vote_count.gte=200";
-
   } else {
-    endpoint = `${TMDB_CONFIG.BASE_URL}/trending/tv/week`;
+    // DODANO: &page=${page}
+    endpoint = `${TMDB_CONFIG.BASE_URL}/trending/tv/week?page=${page}`;
   }
 
   try {
@@ -145,7 +157,9 @@ export const fetchTVSeries = async ({
     const data = await response.json();
 
     if (query) {
-        return data.results.filter((item: any) => item.vote_count > 0 && item.poster_path);
+      return data.results.filter(
+        (item: any) => item.vote_count > 0 && item.poster_path
+      );
     }
 
     return data.results;

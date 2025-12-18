@@ -1,17 +1,25 @@
-import { router } from 'expo-router';
+import { useGlobalContext } from "@/context/GlobalProvider";
+import { Redirect, router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
 const Welcome = () => {
+  const { loading, isLogged } = useGlobalContext();
+
+  if (!loading && isLogged) {
+    return <Redirect href="/(tabs)" />;
+  }
+
   return (
     <SafeAreaView className="bg-primary h-full">
       <ScrollView contentContainerStyle={{ height: '100%' }}>
         <View className="w-full justify-center items-center min-h-[85vh] px-4">
+          
           <Text className="text-5xl text-white font-black text-center tracking-wider mt-20 mb-5 ">
-                FLICK<Text className="text-secondary">MOVIE</Text>
-             </Text>
+            FLICK<Text className="text-secondary">MOVIE</Text>
+          </Text>
 
           <Text className="text-3xl text-white font-bold text-center mt-5">
             Discover movies with <Text className="text-secondary">FlickMovie</Text>
@@ -22,6 +30,7 @@ const Welcome = () => {
           </Text>
 
           <View className="w-full mt-10 space-y-4">
+            {/* Przycisk Rejestracji */}
             <TouchableOpacity
               onPress={() => router.push('/(auth)/sign-up')}
               className="bg-secondary rounded-xl min-h-[62px] justify-center items-center w-full"
@@ -32,6 +41,7 @@ const Welcome = () => {
               </Text>
             </TouchableOpacity>
 
+            {/* Przycisk Logowania */}
             <TouchableOpacity
               onPress={() => router.push('/(auth)/sign-in')}
               className="bg-yellow-500 border-2 border-black-200 rounded-xl min-h-[62px] justify-center items-center w-full mt-4"
@@ -42,6 +52,7 @@ const Welcome = () => {
               </Text>
             </TouchableOpacity>
 
+            {/* Przycisk Gościa */}
             <TouchableOpacity
               onPress={() => router.replace('/(tabs)')}
               className="mt-6"
@@ -54,6 +65,9 @@ const Welcome = () => {
           </View>
         </View>
       </ScrollView>
+      
+      {/* Pasek statusu, aby pasował do ciemnego tła */}
+      <StatusBar backgroundColor="#161622" style="light" />
     </SafeAreaView>
   );
 };
