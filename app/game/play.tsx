@@ -17,14 +17,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-// Wymiary karty
 const CARD_HEIGHT = SCREEN_HEIGHT * 0.75;
 const CARD_WIDTH = SCREEN_WIDTH * 0.95;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
 
 export default function GamePlay() {
   const router = useRouter();
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams(); 
   
   const [movies, setMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +41,8 @@ export default function GamePlay() {
         title: m.title,
         poster_path: m.poster_path,
         vote_average: m.vote_average,
-        release_date: m.release_date
+        release_date: m.release_date,
+        media_type: m.media_type 
     }));
 
     router.replace({
@@ -57,9 +57,12 @@ export default function GamePlay() {
         const genres = params.genres ? JSON.parse(params.genres as string) : [];
         const providers = params.providers ? JSON.parse(params.providers as string) : [];
         
+        const selectedType = params.type as 'movie' | 'tv' || 'movie';
+
         const data = await fetchMoviesForGame({
           genreIds: genres,
-          providerIds: providers
+          providerIds: providers,
+          type: selectedType
         });
         
         setMovies(data.slice(0, 15));
@@ -71,7 +74,7 @@ export default function GamePlay() {
     };
 
     loadGameData();
-  }, [params.genres, params.providers]);
+  }, [params.genres, params.providers, params.type]);
 
   const nextCard = () => {
     translateX.value = 0;
@@ -95,7 +98,6 @@ export default function GamePlay() {
     }
   };
 
-  // --- GESTY KARTY ---
   const cardGesture = Gesture.Pan()
     .enabled(!isProcessing && !isDetailVisible) 
     .onUpdate((event) => {
@@ -113,15 +115,10 @@ export default function GamePlay() {
       }
     });
 
-  // Funkcja pomocnicza do sterowania gestem z modala (po kliknięciu przycisku w szczegółach)
   const triggerSwipeFromModal = (direction: 'left' | 'right') => {
     if (isProcessing) return;
     setIsProcessing(true);
-    
-    // Zamykamy modal
     setIsDetailVisible(false);
-
-    // Czekamy chwilę aż modal zniknie i odpalamy animację swipe
     setTimeout(() => {
         const endPos = direction === 'right' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
         translateX.value = withSpring(endPos, {}, () => {
@@ -148,9 +145,11 @@ export default function GamePlay() {
   if (movies.length === 0) {
     return (
       <View className="flex-1 bg-primary justify-center items-center px-6">
-        <Text className="text-white text-center text-lg mb-4">Nie znaleziono filmów.</Text>
+        {/* TRANSLATED */}
+        <Text className="text-white text-center text-lg mb-4">No matching titles found.</Text>
         <TouchableOpacity onPress={() => router.back()} className="bg-secondary px-6 py-3 rounded-xl">
-           <Text className="font-bold">Zmień filtry</Text>
+           {/* TRANSLATED */}
+           <Text className="font-bold">Change Filters</Text>
         </TouchableOpacity>
       </View>
     );
@@ -161,8 +160,6 @@ export default function GamePlay() {
 
   return (
     <SafeAreaView className="flex-1 bg-primary items-center justify-between py-2">
-      
-      {/* Licznik */}
       <View className="z-20 mt-2">
         <Text className="text-gray-400 font-bold opacity-80">
           {currentIndex + 1} / {movies.length}
@@ -170,7 +167,7 @@ export default function GamePlay() {
       </View>
 
       <View className="flex-1 items-center justify-center relative w-full my-4">
-        {/* Karta Tła */}
+        {/* Next Card */}
         {nextMovie && (
           <View 
             className="absolute bg-black-200 rounded-3xl overflow-hidden opacity-40 border border-white/5"
@@ -184,7 +181,7 @@ export default function GamePlay() {
           </View>
         )}
 
-        {/* Aktywna Karta */}
+        {/* Active Card */}
         {activeMovie ? (
           <GestureDetector gesture={cardGesture}>
             <Animated.View 
@@ -201,10 +198,9 @@ export default function GamePlay() {
                 style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' }}
               />
               
-              {/* Sekcja Info */}
               <TouchableOpacity 
                 activeOpacity={1}
-                onPress={() => setIsDetailVisible(true)} // Kliknięcie w info też otwiera
+                onPress={() => setIsDetailVisible(true)}
                 className="absolute bottom-0 left-0 right-0 p-5 pb-8 flex-col justify-end h-[40%]"
               >
                     <Text className="text-white text-4xl font-extrabold mb-2 shadow-black" numberOfLines={2}>
@@ -220,6 +216,10 @@ export default function GamePlay() {
                         <Text className="text-gray-300 text-lg font-medium">
                             {activeMovie.release_date?.split('-')[0]}
                         </Text>
+                        {/* TRANSLATED: Type Indicator */}
+                        <Text className="text-gray-400 text-sm uppercase font-bold border border-gray-600 px-1 rounded">
+                           {params.type === 'tv' ? 'TV SERIES' : 'MOVIE'}
+                        </Text>
                     </View>
               </TouchableOpacity>
             </Animated.View>
@@ -227,21 +227,19 @@ export default function GamePlay() {
         ) : null}
       </View>
 
-      {/* --- NOWY PRZYCISK: CHECK DETAILS --- */}
-      {/* Zastępuje stare przyciski sterowania */}
       <View className="mb-8 z-20">
         <TouchableOpacity 
           onPress={() => setIsDetailVisible(true)}
           activeOpacity={0.8}
           className="flex-row items-center bg-black-200/80 px-8 py-4 rounded-full border border-white/20 backdrop-blur-md shadow-lg"
         >
+          {/* TRANSLATED (Already was English, kept it) */}
           <Text className="text-white font-bold text-lg mr-2">Check Details</Text>
-          {/* Strzałka w górę */}
           <Image source={icons.play} className="w-4 h-4 -rotate-90" tintColor="white" />
         </TouchableOpacity>
       </View>
 
-      {/* --- MODAL ZE SZCZEGÓŁAMI --- */}
+      {/* Modal Details */}
       {activeMovie && (
         <Modal
             visible={isDetailVisible}
@@ -251,7 +249,6 @@ export default function GamePlay() {
         >
             <View className="flex-1 bg-primary">
                 <ScrollView contentContainerStyle={{ paddingBottom: 100 }} bounces={false}>
-                    {/* Wielkie Zdjęcie na górze */}
                     <View className="w-full h-[65vh] relative">
                          <Image 
                             source={{ uri: `https://image.tmdb.org/t/p/original${activeMovie.poster_path}` }}
@@ -262,7 +259,6 @@ export default function GamePlay() {
                             colors={['transparent', '#000c1c']}
                             style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 100 }}
                         />
-                         {/* Przycisk powrotu na zdjęciu (Strzałka w dół) */}
                          <TouchableOpacity 
                             onPress={() => setIsDetailVisible(false)}
                             className="absolute top-12 right-6 w-10 h-10 bg-black/50 rounded-full justify-center items-center"
@@ -271,7 +267,6 @@ export default function GamePlay() {
                          </TouchableOpacity>
                     </View>
 
-                    {/* Treść pod zdjęciem */}
                     <View className="px-5 -mt-6">
                         <Text className="text-white text-4xl font-extrabold mb-2">
                             {activeMovie.title}
@@ -289,16 +284,32 @@ export default function GamePlay() {
                             </Text>
                         </View>
 
+                        {/* TRANSLATED */}
                         <Text className="text-secondary text-lg font-bold mb-2 uppercase tracking-wider">
-                            O Filmie
+                            Overview
                         </Text>
+                        {/* TRANSLATED */}
                         <Text className="text-gray-300 text-lg leading-8">
-                            {activeMovie.overview || "Brak opisu dla tego filmu."}
+                            {activeMovie.overview || "No description available for this title."}
                         </Text>
                     </View>
                 </ScrollView>
 
+                <View className="absolute bottom-8 w-full flex-row justify-center gap-12">
+                     <TouchableOpacity 
+                        onPress={() => triggerSwipeFromModal('left')}
+                        className="w-16 h-16 bg-black-200 rounded-full justify-center items-center border border-red-500 shadow-xl"
+                    >
+                         <Text className="text-red-500 text-2xl font-bold">✕</Text>
+                    </TouchableOpacity>
 
+                    <TouchableOpacity 
+                        onPress={() => triggerSwipeFromModal('right')}
+                        className="w-16 h-16 bg-secondary rounded-full justify-center items-center shadow-xl shadow-orange-500/40"
+                    >
+                        <Image source={icons.play} className="w-7 h-7 ml-1" tintColor="white" />
+                    </TouchableOpacity>
+                </View>
             </View>
         </Modal>
       )}

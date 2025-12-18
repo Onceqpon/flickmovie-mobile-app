@@ -11,6 +11,8 @@ import {
 
 import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
+// [NOWOŚĆ] Importujemy hooka do sprawdzania stanu logowania
+import { useGlobalContext } from "@/context/GlobalProvider";
 
 import React from "react";
 
@@ -22,7 +24,7 @@ const TAB_CONFIG: Record<string, { icon: ImageSourcePropType; title: string }> =
   profile: { icon: icons.user, title: "Profile" },
 };
 
-// Komponent pojedynczego przycisku zakładki (Home, Movies, itp.)
+// Komponent pojedynczego przycisku zakładki
 function TabItem({ 
   focused, 
   icon, 
@@ -65,6 +67,8 @@ function TabItem({
 // --- NASZ WŁASNY PASEK NAWIGACJI ---
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const router = useRouter();
+  // [NOWOŚĆ] Pobieramy informację, czy użytkownik jest zalogowany
+  const { isLogged } = useGlobalContext(); 
 
   return (
     <View className="absolute bottom-9 left-5 right-5 h-[64px] bg-[#000c1c] rounded-[50px] border border-[#0F0D23] flex-row items-center p-1 shadow-lg shadow-black/50 justify-between">
@@ -74,7 +78,6 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         const isFocused = state.index === index;
         const config = TAB_CONFIG[route.name];
 
-        // Obsługa kliknięcia w zakładkę
         const onPress = () => {
           const event = navigation.emit({
             type: "tabPress",
@@ -97,21 +100,22 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           />
         );
 
-        // --- MAGIA: WSTAWIAMY PRZYCISK PLAY NA ŚRODEK ---
-        // Mamy 4 zakładki (indeksy 0, 1, 2, 3).
-        // Chcemy Play pomiędzy indeksem 1 (Movies) a 2 (TVSeries).
-        // Więc przed wyrenderowaniem indeksu 2, wstawiamy Play.
+        // --- LOGIKA PLAY ---
+        // Wstawiamy przycisk Play przed indeksem 2 (TVSeries), ale TYLKO jeśli isLogged === true
         if (index === 2) {
           return (
             <React.Fragment key="play-wrapper">
-              {/* Środkowy Przycisk Play */}
-              <TouchableOpacity
-                onPress={() => router.push("/game/setup" as any)}
-                activeOpacity={0.8}
-                className="w-14 h-14 bg-secondary rounded-full justify-center items-center shadow-lg shadow-orange-500/40 border-4 border-[#000c1c] -mt-6 mx-1"
-              >
-                 <Image source={icons.play} className="size-6 ml-1" tintColor="#FFFFFF" />
-              </TouchableOpacity>
+              
+              {/* [ZMIANA] Renderowanie warunkowe: Pokaż tylko jeśli zalogowany */}
+              {isLogged && (
+                <TouchableOpacity
+                  onPress={() => router.push("/game" as any)}
+                  activeOpacity={0.8}
+                  className="w-14 h-14 bg-secondary rounded-full justify-center items-center shadow-lg shadow-orange-500/40 border-4 border-[#000c1c] -mt-6 mx-1"
+                >
+                   <Image source={icons.play} className="size-6 ml-1" tintColor="#FFFFFF" />
+                </TouchableOpacity>
+              )}
               
               {/* Następnie renderujemy normalną zakładkę (TVSeries) */}
               {tabButton}
@@ -123,7 +127,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       })}
     </View>
   );
-} // Potrzebne do React.Fragment
+}
 
 export default function TabsLayout() {
   return (
@@ -133,10 +137,8 @@ export default function TabsLayout() {
         headerShown: false,
       }}
     >
-      {/* Definiujemy KOLEJNOŚĆ zakładek. To bardzo ważne! */}
       <Tabs.Screen name="index" options={{ title: "Home" }} />
       <Tabs.Screen name="movies" options={{ title: "Movies" }} />
-      {/* Tutaj w CustomTabBar wskoczy przycisk Play */}
       <Tabs.Screen name="tvseries" options={{ title: "TV/Series" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>

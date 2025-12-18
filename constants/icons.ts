@@ -10,6 +10,8 @@ import eye from "@/assets/icons/eye.png";
 import heart from "@/assets/icons/heart.png";
 import home from "@/assets/icons/home.png";
 import logo from "@/assets/icons/logo.png";
+import path from "@/assets/icons/path.png";
+import people from "@/assets/icons/people.png";
 import play from "@/assets/icons/play.png";
 import playlist from "@/assets/icons/playlist.png";
 import plus from "@/assets/icons/plus.png";
@@ -41,5 +43,7 @@ export const icons = {
   bookmark,
   eye,
   edit,
-  heart
+  heart,
+  path,
+  people
 };

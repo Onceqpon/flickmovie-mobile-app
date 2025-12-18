@@ -66,18 +66,27 @@ export const fetchMovies = async ({
 };
 
 export const fetchMovieDetails = async (
-  movieId: string
-): Promise<MovieDetails> => {
+  movieId: string | number | undefined | null
+): Promise<MovieDetails | null> => {
+  // 1. ZABEZPIECZENIE: Jeśli ID jest puste, nie robimy zapytania
+  if (!movieId) {
+    console.warn("fetchMovieDetails: Przerwano - brak movieId");
+    return null;
+  }
+
   try {
     const response = await fetch(
-      `${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}`,
+      `${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}&language=pl-PL`, // Dodajmy język polski przy okazji
       {
         method: "GET",
         headers: TMDB_CONFIG.headers,
       }
     );
 
+    // 2. OBSŁUGA BŁĘDU HTTP (np. 404)
     if (!response.ok) {
+      // Jeśli to 404, to może być ID serialu, a my pytamy endpoint filmowy
+      console.error(`fetchMovieDetails Error: ${response.status} for ID: ${movieId}`);
       throw new Error(`Failed to fetch movie details: ${response.statusText}`);
     }
 
@@ -85,7 +94,8 @@ export const fetchMovieDetails = async (
     return data;
   } catch (error) {
     console.error("Error fetching movie details:", error);
-    throw error;
+    // W React Native lepiej zwrócić null niż throw, żeby nie crashować całego UI
+    return null; 
   }
 };
 
@@ -198,73 +208,119 @@ export const fetchSeasonDetails = async (
 export const WATCH_PROVIDERS = {
   NETFLIX: 8,
   DISNEY_PLUS: 337,
-  MAX: 1899,       // Dawniej HBO Max
+  MAX: 1899,       // Formerly HBO Max
   AMAZON_PRIME: 119,
   APPLE_TV: 350,
   SKYSHOWTIME: 1773
 };
 
-// Lista gatunków
-export const GENRES = [
-  { id: 28, name: "Akcja" },
-  { id: 12, name: "Przygodowy" },
-  { id: 16, name: "Animacja" },
-  { id: 35, name: "Komedia" },
-  { id: 80, name: "Kryminał" },
-  { id: 99, name: "Dokument" },
-  { id: 18, name: "Dramat" },
-  { id: 10751, name: "Rodzinny" },
+export const MOVIE_GENRES = [
+  { id: 28, name: "Action" },
+  { id: 12, name: "Adventure" },
+  { id: 16, name: "Animation" },
+  { id: 35, name: "Comedy" },
+  { id: 80, name: "Crime" },
+  { id: 99, name: "Documentary" },
+  { id: 18, name: "Drama" },
+  { id: 10751, name: "Family" },
   { id: 14, name: "Fantasy" },
-  { id: 36, name: "Historyczny" },
+  { id: 36, name: "History" },
   { id: 27, name: "Horror" },
-  { id: 10402, name: "Muzyczny" },
-  { id: 9648, name: "Tajemnica" },
-  { id: 10749, name: "Romans" },
-  { id: 878, name: "Sci-Fi" },
+  { id: 10402, name: "Music" },
+  { id: 9648, name: "Mystery" },
+  { id: 10749, name: "Romance" },
+  { id: 878, name: "Science Fiction" },
   { id: 53, name: "Thriller" },
-  { id: 10752, name: "Wojenny" },
+  { id: 10752, name: "War" },
+  { id: 37, name: "Western" },
+];
+
+export const TV_GENRES = [
+  { id: 10759, name: "Action & Adventure" },
+  { id: 16, name: "Animation" },
+  { id: 35, name: "Comedy" },
+  { id: 80, name: "Crime" },
+  { id: 99, name: "Documentary" },
+  { id: 18, name: "Drama" },
+  { id: 10751, name: "Family" },
+  { id: 10762, name: "Kids" },
+  { id: 9648, name: "Mystery" },
+  { id: 10763, name: "News" }, 
+  { id: 10764, name: "Reality" },
+  { id: 10765, name: "Sci-Fi & Fantasy" },
+  { id: 10766, name: "Soap" },
+  { id: 10767, name: "Talk" },
+  { id: 10768, name: "War & Politics" },
+  { id: 37, name: "Western" },
 ];
 
 export const fetchMoviesForGame = async ({
   genreIds,
   providerIds,
+  type = 'movie' 
 }: {
   genreIds: number[];
   providerIds: number[];
-}): Promise<Movie[]> => {
-  // KLUCZOWE: Używamy separatora '|' (pipe), który w API TMDb oznacza logiczne "LUB" (OR).
-  // Dzięki temu wybór Netflix + Disney pokaże filmy z obu platform.
+  type?: 'movie' | 'tv' | null;
+}): Promise<any[]> => {
+  const mediaType = type === 'tv' ? 'tv' : 'movie';
+  
+  // TERAZ NIE POTRZEBUJEMY JUŻ MAPOWANIA!
+  // Zakładamy, że UI przekazało poprawne ID z odpowiedniej listy (TV_GENRES lub MOVIE_GENRES)
+  
   const genresString = genreIds.join("|"); 
   const providersString = providerIds.join("|"); 
   
-  // watch_region=PL jest niezbędne, aby filtrowanie po dostawcach działało poprawnie dla Polski
-  let endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=popularity.desc&watch_region=PL`;
+  const voteCountLimit = mediaType === 'tv' ? 10 : 50;
   
-  if (genresString) {
-    endpoint += `&with_genres=${genresString}`;
-  }
+  let baseEndpoint = `${TMDB_CONFIG.BASE_URL}/discover/${mediaType}?sort_by=popularity.desc&watch_region=PL&vote_count.gte=${voteCountLimit}`;
   
-  if (providersString) {
-    endpoint += `&with_watch_providers=${providersString}`;
-  }
+  if (genresString) baseEndpoint += `&with_genres=${genresString}`;
+  if (providersString) baseEndpoint += `&with_watch_providers=${providersString}`;
 
-  // Pobieramy wyniki i filtrujemy te bez plakatu
-  endpoint += "&page=1&vote_count.gte=50"; // Dodatkowe filtry jakościowe
-
+  // ... reszta funkcji (pobieranie stron, losowanie, normalizacja) bez zmian ...
+  // (Skopiuj resztę z poprzedniej wersji - logikę fetch, probe, shuffle)
+  
   try {
-    const response = await fetch(endpoint, {
-      method: "GET",
-      headers: TMDB_CONFIG.headers,
+    const probeResponse = await fetch(`${baseEndpoint}&page=1`, {
+       method: "GET",
+       headers: TMDB_CONFIG.headers,
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch game movies: ${response.statusText}`);
+    // ... itd ...
+    if (!probeResponse.ok) throw new Error(`Probe fetch failed`);
+    const probeData = await probeResponse.json();
+    const totalPages = probeData.total_pages || 1;
+    if (totalPages === 0) return [];
+    
+    const maxPage = Math.min(totalPages, 20); 
+    const randomPage = Math.floor(Math.random() * maxPage) + 1;
+    
+    let results = [];
+    if (randomPage === 1) {
+        results = probeData.results;
+    } else {
+        const randomPageResponse = await fetch(`${baseEndpoint}&page=${randomPage}`, {
+            method: "GET",
+            headers: TMDB_CONFIG.headers,
+        });
+        const randomPageData = await randomPageResponse.json();
+        results = randomPageData.results;
     }
+    
+    const normalizedResults = results
+      .filter((item: any) => item.poster_path)
+      .map((item: any) => ({
+          ...item,
+          id: item.id,
+          title: item.title || item.name, 
+          release_date: item.release_date || item.first_air_date,
+          media_type: mediaType 
+      }));
 
-    const data = await response.json();
-    return data.results.filter((item: any) => item.poster_path);
+    return normalizedResults.sort(() => 0.5 - Math.random());
+    
   } catch (error) {
-    console.error("Error fetching game movies:", error);
+    console.error("Error fetching game data:", error);
     throw error;
   }
 };
