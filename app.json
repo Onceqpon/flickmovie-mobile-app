@@ -6,14 +6,15 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "flickmovie",
-    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "userInterfaceStyle": "dark",  // <--- Wymuś tryb ciemny
+    "backgroundColor": "#000C1C",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#000C1C",
         "foregroundImage": "./assets/images/icon.png",
         "backgroundImage": "./assets/images/icon.png",
         "monochromeImage": "./assets/images/icon.png"

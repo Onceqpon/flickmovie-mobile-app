@@ -1,8 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   ScrollView,
@@ -10,11 +10,15 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { icons } from "@/constants/icons";
 import { fetchMovies } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
+// 1. IMPORT KONTEKSTU
+import { useGlobalContext } from "@/context/GlobalProvider";
 
+import FlickMatchBanner from "@/components/FlickMatchBanner";
 import MovieCard from "@/components/MovieCard";
 import SearchBar from "@/components/SearchBar";
 
@@ -24,25 +28,35 @@ const MoreCard = ({ onPress }: { onPress: () => void }) => {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      className="w-[140px] justify-center items-center bg-secondary/10 rounded-[18px] border-2 border-secondary/30 overflow-hidden"
+      className="w-[140px] justify-center items-center bg-white/5 rounded-2xl border border-white/10 ml-2"
       style={{ aspectRatio: 2 / 3 }}
     >
-      <View className="items-center justify-center space-y-3">
-        <View className="w-16 h-16 rounded-full bg-secondary justify-center items-center shadow-lg shadow-secondary/50">
+      <View className="items-center justify-center space-y-3 opacity-80">
+        <View className="w-14 h-14 rounded-full bg-secondary/20 justify-center items-center border border-secondary/50">
            <Image
-             source={icons.plus}
-             className="w-8 h-8"
+             source={icons.plus || icons.search} 
+             className="w-6 h-6"
              resizeMode="contain"
-             tintColor="#000C1C" 
+             tintColor="#FF9C01" 
            />
         </View>
-        <Text className="text-secondary font-black text-xl tracking-wider uppercase">
-          MORE
+        <Text className="text-gray-300 font-bold text-sm tracking-widest uppercase">
+          View All
         </Text>
       </View>
     </TouchableOpacity>
   );
 };
+
+// --- NAGŁÓWEK SEKCJI ---
+const SectionHeader = ({ title }: { title: string }) => (
+  <View className="flex-row items-center mb-4 px-4 mt-6">
+    <View className="w-1 h-6 bg-secondary rounded-full mr-3" />
+    <Text className="text-xl text-white font-bold tracking-wide">
+      {title}
+    </Text>
+  </View>
+);
 
 // --- DANE GATUNKÓW ---
 const genres = [
@@ -68,7 +82,6 @@ const genres = [
 ];
 
 // --- SEKCJA GATUNKU ---
-// POPRAWKA: Zmieniono typ id z 'number | null' na 'number'
 const GenreSection = ({ genre }: { genre: { id: number; name: string } }) => {
   const router = useRouter();
   
@@ -77,43 +90,37 @@ const GenreSection = ({ genre }: { genre: { id: number; name: string } }) => {
     []
   );
 
-  if (loading) {
-    return (
-      <View className="mt-8 h-52 justify-center">
-        <ActivityIndicator size="small" color="#fff" />
-      </View>
-    );
-  }
+  if (loading) return null;
 
   if (error || !movies || movies.length === 0) {
     return null; 
   }
 
   return (
-    <View className="mt-8 bg-white/10 py-5 rounded-3xl">
-      <Text className="text-lg text-white font-bold mb-3 px-4">
-        {genre.name}
-      </Text>
+    <View className="mb-2">
+      <SectionHeader title={genre.name} />
       
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
         data={movies}
         contentContainerStyle={{
-          gap: 14,
+          gap: 16,
           paddingHorizontal: 16, 
         }}
         renderItem={({ item }) => (
-          <MovieCard {...item} className="w-[140px]" />
+          <MovieCard 
+            {...item} 
+            className="w-[140px] shadow-lg shadow-black/40" 
+          />
         )}
         keyExtractor={(item) => item.id.toString()}
         ListFooterComponent={() => (
           <MoreCard 
             onPress={() => {
-              // Teraz genre.id jest pewnym numerem (number), więc błąd zniknie
               router.push({
                 pathname: "/category/[id]",
-                params: { id: genre.id, name: genre.name }
+                params: { id: genre.id, name: genre.name, type: 'movie' }
               });
             }} 
           />
@@ -124,43 +131,86 @@ const GenreSection = ({ genre }: { genre: { id: number; name: string } }) => {
 };
 
 // --- GŁÓWNY WIDOK ---
-const Index = () => {
+const Movies = () => {
   const router = useRouter();
 
+  // 2. POBIERANIE DANYCH UŻYTKOWNIKA
+  const { user } = useGlobalContext();
+  const rawAvatar = (user?.prefs as any)?.avatar;
+  const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
+
   return (
-    <View className="flex-1 bg-primary">
+    <View className="flex-1 bg-[#000C1C]">
+      <StatusBar style="light" />
       
       {/* TŁO GRADIENTOWE */}
       <LinearGradient
-        colors={["#000C1C", "#161622", "#1E1E2D"]}
+        colors={["#000C1C", "#13132B", "#1E1E2D"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         className="absolute w-full h-full"
       />
 
-      <ScrollView
-        className="flex-1 px-4"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ minHeight: "100%", paddingBottom: 100 }}
-      >
-        <Text className="text-5xl text-white font-black text-center tracking-wider mt-20 mb-5 ">
-          FLICK<Text className="text-secondary">MOVIE</Text>
-        </Text>
+      <SafeAreaView className="flex-1">
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
+          {/* --- CUSTOM HEADER --- */}
+          <View className="flex-row justify-between items-center px-5 mt-2 mb-6">
+            <View>
+              <Text className="font-pmedium text-sm text-gray-200">Browse by Genre</Text>
+              <Text className="text-3xl text-white font-black tracking-wider">
+                Explore <Text className="text-secondary">Movies</Text>
+              </Text>
+            </View>
+            
+            {/* 3. LOGIKA AWATARA */}
+            <TouchableOpacity 
+                className="w-10 h-10 bg-white/10 rounded-full justify-center items-center border border-white/20 overflow-hidden"
+                onPress={() => router.push('/profile')}
+            >
+                {userAvatar ? (
+                  <Image 
+                    source={{ uri: userAvatar }} 
+                    className="w-full h-full" 
+                    resizeMode="cover" 
+                  />
+                ) : (
+                  <Image 
+                    source={icons.user} 
+                    className="w-6 h-6" 
+                    resizeMode="contain" 
+                    tintColor="#fff"
+                  />
+                )}
+            </TouchableOpacity>
+          </View>
 
-        <View className="flex-1 mt-5">
-          <SearchBar
-            onPress={() => {
-              router.push("/search/search");
-            }}
-            placeholder="Search for a movie"
-          />
-          <View className="mt-5">
+          {/* --- SEARCH BAR --- */}
+          <View className="px-5 mb-4">
+            <SearchBar
+              onPress={() => {
+                router.push("/search/search");
+              }}
+              placeholder="Search for a movie..."
+            />
+          </View>
+
+        <FlickMatchBanner />
+
+          {/* --- LISTA GATUNKÓW --- */}
+          <View className="mt-2">
             {genres.map((genre) => (
               <GenreSection key={genre.name} genre={genre} />
             ))}
           </View>
-        </View>
-      </ScrollView>
+
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
 
-export default Index;
+export default Movies;

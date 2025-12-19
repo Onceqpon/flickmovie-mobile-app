@@ -83,7 +83,7 @@ export const fetchMovieDetails = async (
 
   try {
     const response = await fetch(
-      `${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}&language=pl-PL`, // Dodajmy język polski przy okazji
+      `${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}&language=en-US`, // Dodajmy język polski przy okazji
       {
         method: "GET",
         headers: TMDB_CONFIG.headers,

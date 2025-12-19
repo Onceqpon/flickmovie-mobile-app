@@ -33,7 +33,7 @@ export default function GameWelcomeScreen() {
         <View className="items-center mb-10">
             <View className="relative">
                 <Text className="text-4xl text-white font-black text-center tracking-wider">
-                    FLICK<Text className="text-secondary">MOVIE</Text>
+                    FLICK<Text className="text-secondary">MATCH</Text>
                 </Text>
                 <Image
                     source={icons.path}

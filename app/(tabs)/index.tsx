@@ -1,53 +1,68 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Importy serwisów
-import { icons } from "@/constants/icons"; // Import ikon
+import { icons } from "@/constants/icons";
+import { useGlobalContext } from "@/context/GlobalProvider";
 import { getTrendingMovies, getTrendingSeries } from "@/services/appwriteapi";
 import { fetchMovies, fetchTVSeries, SORT_OPTIONS } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
 
 // Komponenty
+import FlickMatchBanner from "@/components/FlickMatchBanner";
 import MovieCard from "@/components/MovieCard";
 import SearchBar from "@/components/SearchBar";
 import TrendingCard from "@/components/TrendingMovieCard";
 import TrendingSeriesCard from "@/components/TrendingTVSeriesCard";
 import TVSeriesCard from "@/components/TVSeriesCard";
 
-// --- KOMPONENT KARTY "MORE" ---
+
+// --- NOWOCZESNA KARTA "MORE" ---
 const MoreCard = ({ onPress }: { onPress: () => void }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      className="w-[140px] justify-center items-center bg-secondary/10 rounded-[18px] border-2 border-secondary/30 overflow-hidden"
+      className="w-[140px] justify-center items-center bg-white/5 rounded-2xl border border-white/10 ml-2"
       style={{ aspectRatio: 2 / 3 }}
     >
-      <View className="items-center justify-center space-y-3">
-        <View className="w-16 h-16 rounded-full bg-secondary justify-center items-center shadow-lg shadow-secondary/50">
+      <View className="items-center justify-center space-y-3 opacity-80">
+        <View className="w-14 h-14 rounded-full bg-secondary/20 justify-center items-center border border-secondary/50">
            <Image
-             source={icons.plus}
-             className="w-8 h-8"
+             source={icons.plus || icons.search} 
+             className="w-6 h-6"
              resizeMode="contain"
-             tintColor="#000C1C" 
+             tintColor="#FF9C01" 
            />
         </View>
-        <Text className="text-secondary font-black text-xl tracking-wider uppercase">
-          MORE
+        <Text className="text-gray-300 font-bold text-sm tracking-widest uppercase">
+          View All
         </Text>
       </View>
     </TouchableOpacity>
   );
 };
+
+// --- NAGŁÓWEK SEKCJI ---
+const SectionHeader = ({ title }: { title: string }) => (
+  <View className="flex-row items-center mb-4 px-4 mt-8">
+    <View className="w-1 h-6 bg-secondary rounded-full mr-3" />
+    <Text className="text-xl text-white font-bold tracking-wide">
+      {title}
+    </Text>
+  </View>
+);
 
 // --- SMART COMPONENT: MOVIE SECTION ---
 interface SectionProps {
@@ -56,35 +71,29 @@ interface SectionProps {
 }
 
 const MovieSection = ({ title, sortBy }: SectionProps) => {
-  const router = useRouter(); // Potrzebny do nawigacji z przycisku More
+  const router = useRouter();
   const { data, loading, error } = useLoadData(
     () => fetchMovies({ sortBy }),
     []
   );
 
-  if (loading) {
-    return (
-      <View className="mt-8 h-[200px] justify-center items-center">
-        <ActivityIndicator size="small" color="#0000ff" />
-      </View>
-    );
-  }
+  if (loading) return null; 
 
   if (error || !data || data.length === 0) return null;
 
   return (
-    <View className="mt-8 bg-white/10 py-5 rounded-3xl">
-      <Text className="text-lg text-white font-bold mb-3 px-4">{title}</Text>
+    <View className="mb-2">
+      <SectionHeader title={title} />
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
         data={data}
         contentContainerStyle={{
-          gap: 14,
+          gap: 16,
           paddingHorizontal: 16, 
         }}
         renderItem={({ item }) => (
-          <MovieCard {...item} className="w-[140px]" />
+          <MovieCard {...item} className="w-[140px] shadow-lg shadow-black/40" />
         )}
         keyExtractor={(item) => item.id.toString()}
         ListFooterComponent={() => (
@@ -92,7 +101,6 @@ const MovieSection = ({ title, sortBy }: SectionProps) => {
             onPress={() => {
               router.push({
                 pathname: "/category/[id]",
-                // Przekazujemy sortBy jako ID (np. "popularity.desc")
                 params: { id: sortBy || 'popular', name: title, type: 'movie' }
               });
             }} 
@@ -111,29 +119,23 @@ const SeriesSection = ({ title, sortBy }: SectionProps) => {
     []
   );
 
-  if (loading) {
-    return (
-      <View className="mt-8 h-[200px] justify-center items-center">
-        <ActivityIndicator size="small" color="#0000ff" />
-      </View>
-    );
-  }
+  if (loading) return null;
 
   if (error || !data || data.length === 0) return null;
 
   return (
-    <View className="mt-8 bg-white/10 py-5 rounded-3xl">
-      <Text className="text-lg text-white font-bold mb-3 px-4">{title}</Text>
+    <View className="mb-2">
+      <SectionHeader title={title} />
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
         data={data}
         contentContainerStyle={{
-          gap: 14,
+          gap: 16,
           paddingHorizontal: 16,
         }}
         renderItem={({ item }) => (
-          <TVSeriesCard {...item} className="w-[140px]" />
+          <TVSeriesCard {...item} className="w-[140px] shadow-lg shadow-black/40" />
         )}
         keyExtractor={(item) => item.id.toString()}
         ListFooterComponent={() => (
@@ -151,9 +153,14 @@ const SeriesSection = ({ title, sortBy }: SectionProps) => {
   );
 };
 
+
 // --- GŁÓWNY WIDOK ---
 const Index = () => {
   const router = useRouter();
+
+  const { user } = useGlobalContext();
+  const rawAvatar = (user?.prefs as any)?.avatar; 
+  const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
 
   const {
     data: trendingMovies,
@@ -168,98 +175,121 @@ const Index = () => {
   } = useLoadData(getTrendingSeries, []);
 
   return (
-    <View className="flex-1 bg-primary">
+    <View className="flex-1 bg-[#000C1C]">
+      <StatusBar style="light" />
       
       {/* Tło Gradientowe */}
       <LinearGradient
-        colors={["#000C1C", "#161622", "#1E1E2D"]}
+        colors={["#000C1C", "#13132B", "#1E1E2D"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         className="absolute w-full h-full"
       />
 
-      <ScrollView
-        className="flex-1 px-4" 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ minHeight: "100%", paddingBottom: 100 }}
-      >
-        <Text className="text-5xl text-white font-black text-center tracking-wider mt-20 mb-5 ">
-          FLICK<Text className="text-secondary">MOVIE</Text>
-        </Text>
-
-        <View className="flex-1 mt-5">
-          <SearchBar
-            onPress={() => {
-              router.push("/search/search");
-            }}
-            placeholder="Search for a movie or series"
-          />
-
-          {/* --- SEKCJA TRENDÓW FILMÓW --- */}
-          {trendingLoading ? (
-            <ActivityIndicator size="large" color="#0000ff" className="mt-10" />
-          ) : trendingError ? (
-            <Text className="text-red-500 mt-5">Error loading trends</Text>
-          ) : (
-            trendingMovies && trendingMovies.length > 0 && (
-              <View className="mt-10 bg-white/10 py-5 rounded-3xl">
-                <Text className="text-lg text-white font-bold mb-3 px-4">
-                  Trending Movies
-                </Text>
-                <FlatList
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  data={trendingMovies}
-                  contentContainerStyle={{ gap: 20, paddingHorizontal: 16 }}
-                  renderItem={({ item, index }) => (
-                    <TrendingCard movie={item} index={index} />
-                  )}
-                  keyExtractor={(item) => item.movie_id.toString()}
+      <SafeAreaView className="flex-1">
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
+          {/* --- CUSTOM HEADER --- */}
+          <View className="flex-row justify-between items-center px-5 mt-2 mb-6">
+            <View>
+              <Text className="font-pmedium text-sm text-gray-200">Welcome Back</Text>
+              <Text className="text-3xl text-white font-black tracking-wider">
+                FLICK<Text className="text-secondary">MOVIE</Text>
+              </Text>
+            </View>
+            
+            {/* Awatar użytkownika */}
+            <TouchableOpacity 
+                className="w-10 h-10 bg-white/10 rounded-full justify-center items-center border border-white/20 overflow-hidden"
+                onPress={() => router.push('/profile')}
+            >
+              {userAvatar ? (
+                <Image 
+                  source={{ uri: userAvatar }} 
+                  className="w-full h-full" 
+                  resizeMode="cover" 
                 />
-              </View>
-            )
+              ) : (
+                <Image 
+                  source={icons.user || icons.user} 
+                  className="w-6 h-6" 
+                  resizeMode="contain" 
+                  tintColor="#fff"
+                  />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* --- SEARCH BAR --- */}
+          <View className="px-5 mb-6">
+            <SearchBar
+              onPress={() => router.push("/search/search")}
+              placeholder="Discover movies & series..."
+            />
+          </View>
+
+          {/* --- SEKCJA TRENDÓW (FEATURED) --- */}
+          
+          {!trendingLoading && !trendingError && (trendingMovies?.length || 0) > 0 && (
+            <View className="mb-4">
+              <Text className="text-gray-400 text-sm font-pregular px-5 mb-3 uppercase tracking-widest">
+                Trending Movies
+              </Text>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={trendingMovies}
+                contentContainerStyle={{ gap: 24, paddingHorizontal: 20 }}
+                snapToInterval={180} 
+                decelerationRate="fast"
+                renderItem={({ item, index }) => (
+                  <TrendingCard movie={item} index={index} />
+                )}
+                keyExtractor={(item) => item.movie_id.toString()}
+              />
+            </View>
           )}
 
-          {/* --- SEKCJA TRENDÓW SERIALI --- */}
-          {trendingSeriesLoading ? (
-            <ActivityIndicator size="large" color="#0000ff" className="mt-10" />
-          ) : trendingSeriesError ? (
-            <Text className="text-red-500 mt-5">Error loading series trends</Text>
-          ) : (
-            trendingSeries && trendingSeries.length > 0 && (
-              <View className="mt-8 bg-white/10 py-5 rounded-3xl">
-                <Text className="text-lg text-white font-bold mb-3 px-4">
-                  Trending Series
-                </Text>
-                <FlatList
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  data={trendingSeries}
-                  contentContainerStyle={{ gap: 20, paddingHorizontal: 16 }}
-                  renderItem={({ item, index }) => (
-                    <TrendingSeriesCard series={item} index={index} />
-                  )}
-                  keyExtractor={(item) => item.series_id.toString()}
-                />
-              </View>
-            )
+          {!trendingSeriesLoading && !trendingSeriesError && (trendingSeries?.length || 0) > 0 && (
+             <View className="mb-4">
+               <Text className="text-gray-400 text-sm font-pregular px-5 mb-3 mt-4 uppercase tracking-widest">
+                Trending Series
+              </Text>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={trendingSeries}
+                contentContainerStyle={{ gap: 24, paddingHorizontal: 20 }}
+                snapToInterval={180}
+                decelerationRate="fast"
+                renderItem={({ item, index }) => (
+                  <TrendingSeriesCard series={item} index={index} />
+                )}
+                keyExtractor={(item) => item.series_id.toString()}
+              />
+            </View>
           )}
 
           {/* --- SEKCJE TMDB --- */}
+
+          <FlickMatchBanner />
           
           <MovieSection title="Latest Movies" />
-          <SeriesSection title="New TV Series Episodes" sortBy={SORT_OPTIONS.NEWEST} />
+          <SeriesSection title="New Episodes" sortBy={SORT_OPTIONS.NEWEST} />
 
           <MovieSection title="Popular Movies" sortBy={SORT_OPTIONS.POPULARITY} />
           <SeriesSection title="Popular TV Series" sortBy={SORT_OPTIONS.POPULARITY} />
 
-          <MovieSection title="Top Rated Movies" sortBy={SORT_OPTIONS.TOP_RATED} />
-          <SeriesSection title="Top Rated TV Series" sortBy={SORT_OPTIONS.TOP_RATED} />
+          <MovieSection title="Top Rated" sortBy={SORT_OPTIONS.TOP_RATED} />
 
-          <MovieSection title="Highest Revenue Movies" sortBy={SORT_OPTIONS.REVENUE} />
-
-          <MovieSection title="Most Voted Movies" sortBy={SORT_OPTIONS.MOST_VOTED} />
-          <SeriesSection title="Most Voted TV Series" sortBy={SORT_OPTIONS.MOST_VOTED} />
-        </View>
-      </ScrollView>
+          <MovieSection title="Blockbusters" sortBy={SORT_OPTIONS.REVENUE} />
+          <MovieSection title="Fan Favorites" sortBy={SORT_OPTIONS.MOST_VOTED} />
+        
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };

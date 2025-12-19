@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient"; // Wymagany pakiet
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { cssInterop } from "nativewind";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -9,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import Reviews from "@/components/Reviews";
 import SaveToListModal from "@/components/SaveToListModal";
@@ -17,8 +17,15 @@ import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
 import { fetchMovieDetails } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
+// 1. IMPORT KONTEKSTU
+import { useGlobalContext } from "@/context/GlobalProvider";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+
+// Konfiguracja nativewind dla gradientu
+cssInterop(LinearGradient, {
+  className: "style",
+});
 
 // --- FORMATOWANIE WALUTY ---
 const formatCurrency = (amount: number | undefined): string => {
@@ -51,6 +58,9 @@ const MovieInfo = ({ label, value }: MovieInfoProps) => (
 const Details = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  // 2. POBIERAMY STATUS LOGOWANIA
+  const { isLogged } = useGlobalContext();
+  
   const [modalVisible, setModalVisible] = useState(false);
 
   const movieId = Array.isArray(id) ? id[0] : (id as string | undefined);
@@ -66,21 +76,33 @@ const Details = () => {
 
   if (loading)
     return (
-      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
+      <View className="flex-1 justify-center items-center">
+        <LinearGradient
+            colors={["#000C1C", "#161622", "#1E1E2D"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            className="absolute w-full h-full"
+        />
         <ActivityIndicator size="large" color="#FF9C01" />
-      </SafeAreaView>
+      </View>
     );
 
   if (error || !movie) {
     return (
-      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
+      <View className="flex-1 justify-center items-center">
+        <LinearGradient
+            colors={["#000C1C", "#161622", "#1E1E2D"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            className="absolute w-full h-full"
+        />
         <Text className="text-red-500 text-lg mb-4">
           {error ? `Error: ${error.message}` : "Movie not found"}
         </Text>
         <TouchableOpacity onPress={router.back}>
           <Text className="text-secondary font-bold">Go Back</Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -119,35 +141,37 @@ const Details = () => {
             }}
           />
 
-          {/* Przyciski Akcji (Watchlist / Add) unoszące się nad gradientem */}
-          <View className="absolute bottom-10 right-5 flex-row gap-4 z-10">
-            {/* Watchlist Button */}
-            <View className="rounded-full size-14 bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10">
-              <WatchlistButton
-                item={{
-                  id: movie.id,
-                  title: movie.title,
-                  poster_path: movie.poster_path || "",
-                  vote_average: movie.vote_average || 0,
-                }}
-                type="movie"
-              />
-            </View>
+          {/* 3. PRZYCISKI AKCJI (Tylko dla zalogowanych) */}
+          {isLogged && (
+            <View className="absolute bottom-10 right-5 flex-row gap-4 z-10">
+                {/* Watchlist Button */}
+                <View className="rounded-full size-14 bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10">
+                <WatchlistButton
+                    item={{
+                    id: movie.id,
+                    title: movie.title,
+                    poster_path: movie.poster_path || "",
+                    vote_average: movie.vote_average || 0,
+                    }}
+                    type="movie"
+                />
+                </View>
 
-            {/* Add To List Button */}
-            <TouchableOpacity
-              onPress={() => setModalVisible(true)}
-              className="rounded-full size-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
-              activeOpacity={0.8}
-            >
-              <Image
-                source={icons.plus}
-                className="size-7"
-                resizeMode="contain"
-                tintColor="#161622"
-              />
-            </TouchableOpacity>
-          </View>
+                {/* Add To List Button */}
+                <TouchableOpacity
+                onPress={() => setModalVisible(true)}
+                className="rounded-full size-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
+                activeOpacity={0.8}
+                >
+                <Image
+                    source={icons.plus}
+                    className="size-7"
+                    resizeMode="contain"
+                    tintColor="#161622"
+                />
+                </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* --- TREŚĆ --- */}
@@ -182,7 +206,7 @@ const Details = () => {
             {movie.genres?.map((g) => (
               <View
                 key={g.id}
-                className="bg-main-bg px-3 py-1.5 rounded-lg border border-gray-800"
+                className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10"
               >
                 <Text className="text-gray-300 text-xs font-medium">
                   {g.name}
@@ -198,7 +222,7 @@ const Details = () => {
           </Text>
 
           {/* Info Grid (Budżet, Przychód, Studio) */}
-          <View className="flex-row justify-between bg-main-bg p-4 rounded-2xl mb-8 border border-gray-800">
+          <View className="flex-row justify-between bg-white/5 p-4 rounded-2xl mb-8 border border-white/10">
             <View className="flex-1 mr-2">
               <MovieInfo label="Budget" value={formatCurrency(movie.budget)} />
               <MovieInfo
@@ -241,13 +265,15 @@ const Details = () => {
         />
       </TouchableOpacity>
 
-      {/* --- MODAL --- */}
-      <SaveToListModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        mediaId={movie.id}
-        mediaType="movie"
-      />
+      {/* --- MODAL (Tylko dla zalogowanych) --- */}
+      {isLogged && (
+          <SaveToListModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            mediaId={movie.id}
+            mediaType="movie"
+          />
+      )}
     </View>
   );
 };

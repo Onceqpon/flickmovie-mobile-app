@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { cssInterop } from "nativewind"; // DODANO
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,6 +19,11 @@ import MovieCard from "@/components/MovieCard";
 import TVSeriesCard from "@/components/TVSeriesCard";
 import { icons } from "@/constants/icons";
 import { fetchMovies, fetchTVSeries } from "@/services/tmdbapi";
+
+// Konfiguracja Gradientu
+cssInterop(LinearGradient, {
+  className: "style",
+});
 
 // --- KONFIGURACJA WYMIARÓW ---
 const { width } = Dimensions.get("window");
@@ -65,7 +71,6 @@ const CategoryList = () => {
         apiParams.genreId = paramId;
       } else {
         // To jest lista specjalna (np. Popular, id: 'popularity.desc')
-        // Naprawiamy fallback 'popular' na poprawny klucz API
         apiParams.sortBy = paramId === 'popular' ? 'popularity.desc' : paramId;
       }
 
@@ -88,9 +93,14 @@ const CategoryList = () => {
   const handlePrevPage = () => setPage((prev) => (prev > 1 ? prev - 1 : 1));
 
   return (
-    <View className="flex-1 bg-primary">
+    // Główny kontener z ciemnym tłem (eliminuje błyski)
+    <View className="flex-1 bg-[#000C1C]">
+      
+      {/* GLOBALNE TŁO GRADIENTOWE */}
       <LinearGradient
         colors={["#000C1C", "#161622", "#1E1E2D"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
         className="absolute w-full h-full"
       />
 
@@ -101,7 +111,7 @@ const CategoryList = () => {
           <View>
             <TouchableOpacity 
               onPress={() => router.back()} 
-              className="w-10 h-10 bg-white/10 rounded-full justify-center items-center border border-white/10 backdrop-blur-md"
+              className="w-10 h-10 bg-white/10 rounded-full justify-center items-center border border-white/10"
               activeOpacity={0.7}
             >
               <Image 
@@ -114,11 +124,11 @@ const CategoryList = () => {
           </View>
         </View>
 
-        <View className="px-4 mb-4">
-            <Text className="text-4xl font-black text-white tracking-tighter shadow-sm" numberOfLines={2}>
+        <View className="px-4 mb-6">
+            <Text className="text-4xl font-black text-white tracking-tighter" numberOfLines={2}>
               {name}
             </Text>
-            <Text className="text-secondary text-lg font-bold uppercase tracking-widest opacity-80">
+            <Text className="text-secondary text-lg font-bold uppercase tracking-widest opacity-80 mt-1">
               {isTv ? "TV Series" : "Movies"}
             </Text>
         </View>
@@ -136,6 +146,11 @@ const CategoryList = () => {
             numColumns={COLUMNS}
             showsVerticalScrollIndicator={false}
             
+            // Optymalizacja renderowania
+            initialNumToRender={6}
+            maxToRenderPerBatch={6}
+            windowSize={5}
+
             contentContainerStyle={{ 
               paddingHorizontal: PADDING_HORIZONTAL, 
               paddingBottom: 120, 
@@ -151,24 +166,18 @@ const CategoryList = () => {
                 style={{ 
                   width: ITEM_WIDTH, 
                   height: ITEM_WIDTH / ASPECT_RATIO,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 4.65,
-                  elevation: 8,
+                  // Cienie usunięte z View, bo MovieCard/TVSeriesCard mają swoje style
                 }}
               >
                   {isTv ? (
                       <TVSeriesCard 
                         {...item} 
                         className="w-full h-full rounded-2xl border border-white/5" 
-                        resizeMode="stretch" 
                       />
                   ) : (
                       <MovieCard 
                         {...item} 
                         className="w-full h-full rounded-2xl border border-white/5" 
-                        resizeMode="stretch" 
                       />
                   )}
               </View>
@@ -177,7 +186,7 @@ const CategoryList = () => {
             // --- PAGINACJA ---
             ListFooterComponent={() => (
               <View className="mt-10 mb-6 items-center">
-                 <View className="flex-row items-center bg-white/10 px-2 py-2 rounded-full border border-white/10 backdrop-blur-xl">
+                 <View className="flex-row items-center bg-white/10 px-2 py-2 rounded-full border border-white/10">
                     
                     <TouchableOpacity 
                       onPress={handlePrevPage} 
@@ -196,7 +205,7 @@ const CategoryList = () => {
                       onPress={handleNextPage}
                       className="w-12 h-12 rounded-full bg-secondary items-center justify-center shadow-lg shadow-secondary/50"
                     >
-                       <Image 
+                        <Image 
                         source={icons.angle_left} 
                         className="w-5 h-5 rotate-180" 
                         tintColor="#000C1C" 
@@ -214,6 +223,7 @@ const CategoryList = () => {
         )}
       </SafeAreaView>
       
+      {/* Transparentny pasek statusu, aby gradient wchodził pod spód */}
       <StatusBar style="light" backgroundColor="transparent" translucent />
     </View>
   );

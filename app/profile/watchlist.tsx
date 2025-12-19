@@ -53,17 +53,25 @@ const Watchlist = () => {
     fetchWatchlist();
   };
 
+  // --- POPRAWIONA FUNKCJA NAWIGACJI ---
+  // Sprawdza aktualny filtr i przekierowuje do odpowiedniego folderu
+  const handleCardPress = (id: number) => {
+    if (filter === 'movies') {
+      router.push(`/movies/${id}`);
+    } else {
+      router.push(`/tvseries/${id}`);
+    }
+  };
+
   return (
-    // ZMIANA 1: Główny kontener to zwykły View, nie SafeAreaView
     <View className="flex-1 bg-[#1E1E2D]">
       
-      {/* ZMIANA 2: Gradient jest teraz tłem dla całego ekranu (wchodzi pod pasek systemowy) */}
+      {/* TŁO GRADIENTOWE */}
       <LinearGradient
         colors={["#000C1C", "#161622", "#1E1E2D"]}
         className="absolute w-full h-full"
       />
 
-      {/* ZMIANA 3: Dopiero tutaj używamy SafeAreaView dla treści */}
       <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}> 
         <View className="px-4 my-6 flex-1 relative">
           
@@ -72,12 +80,13 @@ const Watchlist = () => {
             <TouchableOpacity 
               onPress={() => router.back()} 
               className="mr-4 bg-black-100 p-2 rounded-full border border-black-200"
+              activeOpacity={0.7}
             >
               <Image 
                 source={icons.left_arrow || icons.angle_left} 
                 className="w-5 h-5" 
                 resizeMode="contain" 
-                style={{ tintColor: '#fff' }}
+                tintColor="#fff"
               />
             </TouchableOpacity>
             <Text className="text-2xl text-white font-bold">My Watchlist</Text>
@@ -92,14 +101,17 @@ const Watchlist = () => {
               renderItem={({ item }) => (
                 <MovieCard 
                   id={item.id} 
-                  title={item.title} 
+                  // ZABEZPIECZENIE: Używamy title lub name (dla seriali)
+                  title={item.title || item.name} 
                   poster_path={item.poster_path} 
                   vote_average={item.vote_average} 
+                  // WAŻNE: Przekazujemy funkcję nawigacji
+                  onPress={() => handleCardPress(item.id)}
                 />
               )}
               numColumns={3}
+              // gap działa dobrze, upewnij się że WatchlistMovieCard ma elastyczną szerokość (np. width: '31%')
               columnWrapperStyle={{ gap: 10, justifyContent: 'flex-start', marginBottom: 15 }} 
-              // Dodatkowy padding na dole, żeby lista wyjeżdżała spod przycisków, ale nie była ucinana
               contentContainerStyle={{ paddingBottom: 100 }} 
               ListEmptyComponent={() => (
                 <View className="flex-1 justify-center items-center mt-20">
@@ -111,7 +123,7 @@ const Watchlist = () => {
                   />
                   <Text className="text-gray-100 text-lg font-psemibold">Your list is empty</Text>
                   <Text className="text-gray-500 text-sm mt-2 font-pregular text-center max-w-[200px]">
-                     {filter === 'movies' ? "Find movies and bookmark them!" : "Find TV series and bookmark them!"}
+                      {filter === 'movies' ? "Find movies and bookmark them!" : "Find TV series and bookmark them!"}
                   </Text>
                 </View>
               )}
@@ -120,11 +132,11 @@ const Watchlist = () => {
           )}
 
           {/* Floating Filter Switcher */}
-          {/* Przeniesiony na sam dół View, aby był nad listą, z marginesem od dołu */}
           <View className="absolute bottom-5 left-4 right-4 bg-black-100/90 backdrop-blur-md rounded-full p-2 flex-row border border-black-200 shadow-lg shadow-black/50">
               <TouchableOpacity 
                   onPress={() => setFilter('movies')}
                   className={`flex-1 py-3 rounded-full items-center justify-center ${filter === 'movies' ? 'bg-secondary' : 'bg-transparent'}`}
+                  activeOpacity={0.7}
               >
                   <Text className={`font-bold text-base ${filter === 'movies' ? 'text-primary' : 'text-gray-400'}`}>Movies</Text>
               </TouchableOpacity>
@@ -132,6 +144,7 @@ const Watchlist = () => {
               <TouchableOpacity 
                   onPress={() => setFilter('series')}
                   className={`flex-1 py-3 rounded-full items-center justify-center ${filter === 'series' ? 'bg-secondary' : 'bg-transparent'}`}
+                  activeOpacity={0.7}
               >
                   <Text className={`font-bold text-base ${filter === 'series' ? 'text-primary' : 'text-gray-400'}`}>TV Series</Text>
               </TouchableOpacity>

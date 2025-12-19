@@ -1,7 +1,5 @@
-import { useRouter } from "expo-router";
-import { Image, Text, TouchableOpacity, View } from "react-native";
-
 import { icons } from "@/constants/icons";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface MovieCardProps {
   id: number;
@@ -22,18 +20,13 @@ const WatchlistMovieCard = ({
   onPress,
   className,
 }: MovieCardProps) => {
-  const router = useRouter();
-
-  const handlePress = () => {
-    if (onPress) {
-      onPress();
-    }
-    router.push(`/movies/${id}`);
-  };
+  // USUNIĘTO: const router = useRouter(); 
+  // USUNIĘTO: const handlePress...
 
   return (
     <TouchableOpacity 
-      onPress={handlePress} 
+      onPress={onPress} // <--- Teraz karta jest "głupia" i robi tylko to, co każe Watchlist.tsx
+      activeOpacity={0.7}
       className={`rounded-lg w-[30%] ${className || ""}`} 
     >
       <Image
@@ -57,6 +50,8 @@ const WatchlistMovieCard = ({
           tintColor="#FF9C01" 
         />
         <Text className="text-xs text-white font-bold uppercase">
+          {/* Zakładam, że chcesz tu dzielić przez 2 tak jak w oryginale, 
+              choć standardowo TMDB daje skalę 1-10 */}
           {(vote_average / 2).toFixed(1)}
         </Text>
       </View>

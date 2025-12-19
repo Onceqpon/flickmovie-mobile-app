@@ -1,130 +1,160 @@
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { Tabs, useRouter } from "expo-router";
+import React from "react";
 import {
   Image,
-  ImageBackground,
   ImageSourcePropType,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 import { icons } from "@/constants/icons";
-import { images } from "@/constants/images";
-// [NOWOŚĆ] Importujemy hooka do sprawdzania stanu logowania
 import { useGlobalContext } from "@/context/GlobalProvider";
 
-import React from "react";
-
-// Konfiguracja wyglądu dla prawdziwych zakładek
 const TAB_CONFIG: Record<string, { icon: ImageSourcePropType; title: string }> = {
   index: { icon: icons.home, title: "Home" },
   movies: { icon: icons.clapperboard, title: "Movies" },
-  tvseries: { icon: icons.screen, title: "TV/Series" },
+  tvseries: { icon: icons.screen, title: "Series" },
   profile: { icon: icons.user, title: "Profile" },
 };
 
-// Komponent pojedynczego przycisku zakładki
-function TabItem({ 
-  focused, 
-  icon, 
-  title, 
-  onPress 
-}: { 
-  focused: boolean; 
-  icon: ImageSourcePropType; 
-  title: string; 
+// --- KOMPONENT POJEDYNCZEJ ZAKŁADKI ---
+const TabItem = ({
+  focused,
+  icon,
+  title,
+  onPress,
+}: {
+  focused: boolean;
+  icon: ImageSourcePropType;
+  title: string;
   onPress: () => void;
-}) {
-  if (focused) {
-    return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.8} className="flex-1">
-        <ImageBackground
-          source={images.btbackground || images.mainbg} 
-          imageStyle={{ borderRadius: 50 }}
-          className="flex-row w-full h-full min-w-[80px] justify-center items-center rounded-full overflow-hidden"
-        >
-          <Image source={icon} tintColor="#151312" className="size-5" />
-          <Text className="text-xs font-bold ml-1 text-[#151312]" numberOfLines={1}>
-            {title}
-          </Text>
-        </ImageBackground>
-      </TouchableOpacity>
-    );
-  }
-
+}) => {
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
-      activeOpacity={0.8}
-      className="flex-1 justify-center items-center h-full"
+    <TouchableOpacity
+      onPress={() => {
+        Haptics.selectionAsync();
+        onPress();
+      }}
+      activeOpacity={0.7}
+      className="flex-1 justify-center items-center h-full gap-1"
     >
-      <Image source={icon} tintColor="#A8B5DB" className="size-6" />
+      <View className="justify-center items-center w-10 h-10 relative">
+        {focused && (
+          <LinearGradient
+            colors={['#FF9C01', '#FF3C00']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="absolute w-full h-full rounded-full"
+          />
+        )}
+
+        <Image
+          source={icon}
+          tintColor={focused ? "#FFFFFF" : "#6B7280"}
+          className="w-5 h-5"
+          resizeMode="contain"
+        />
+      </View>
+
+      <Text
+        className={`text-[10px] font-bold ${
+          focused ? 'text-secondary' : 'text-gray-500'
+        }`}
+        numberOfLines={1}
+      >
+        {title}
+      </Text>
     </TouchableOpacity>
   );
-}
+};
 
-// --- NASZ WŁASNY PASEK NAWIGACJI ---
+// --- ŚRODKOWY PRZYCISK (PLAY) ---
+const PlayButton = ({ onPress }: { onPress: () => void }) => (
+  <TouchableOpacity
+    onPress={() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onPress();
+    }}
+    activeOpacity={0.9}
+    className="top-[-20px] mx-2 shadow-lg shadow-orange-500/40"
+    style={{ zIndex: 10 }}
+  >
+    <LinearGradient
+      colors={['#FF9C01', '#FF3C00']}
+      className="w-16 h-16 rounded-full justify-center items-center border-[4px] border-[#000c1c]"
+    >
+      <Image 
+        source={icons.play} 
+        className="w-7 h-7 ml-1" 
+        tintColor="#FFFFFF" 
+        resizeMode="contain" 
+      />
+    </LinearGradient>
+  </TouchableOpacity>
+);
+
+// --- PASEK NAWIGACJI ---
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const router = useRouter();
-  // [NOWOŚĆ] Pobieramy informację, czy użytkownik jest zalogowany
-  const { isLogged } = useGlobalContext(); 
+  const { isLogged } = useGlobalContext();
 
   return (
-    <View className="absolute bottom-9 left-5 right-5 h-[64px] bg-[#000c1c] rounded-[50px] border border-[#0F0D23] flex-row items-center p-1 shadow-lg shadow-black/50 justify-between">
-      
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const isFocused = state.index === index;
-        const config = TAB_CONFIG[route.name];
+    <View className="absolute bottom-0 w-full items-center pb-6 pt-2">
+      <View className="flex-row bg-[#000c1c] w-[92%] h-[68px] rounded-[34px] border border-[#232533] items-center px-1 justify-between shadow-xl shadow-black">
+        
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const isFocused = state.index === index;
+          const config = TAB_CONFIG[route.name];
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params);
+            }
+          };
+
+          // POPRAWKA TUTAJ: Klucz "key" jest teraz na React.Fragment i jest równy route.key
+          if (index === 2) {
+            return (
+              <React.Fragment key={route.key}>
+                {isLogged ? (
+                  <PlayButton onPress={() => router.push("/game" as any)} />
+                ) : (
+                  <View className="w-8" />
+                )}
+                
+                {/* Usunięto key={route.key} z TabItem, bo jest już na Fragmencie */}
+                <TabItem
+                  focused={isFocused}
+                  icon={config?.icon || icons.home}
+                  title={config?.title || ""}
+                  onPress={onPress}
+                />
+              </React.Fragment>
+            );
           }
-        };
 
-        const tabButton = (
-          <TabItem
-            key={route.key}
-            focused={isFocused}
-            icon={config?.icon || icons.home}
-            title={config?.title || ""}
-            onPress={onPress}
-          />
-        );
-
-        // --- LOGIKA PLAY ---
-        // Wstawiamy przycisk Play przed indeksem 2 (TVSeries), ale TYLKO jeśli isLogged === true
-        if (index === 2) {
           return (
-            <React.Fragment key="play-wrapper">
-              
-              {/* [ZMIANA] Renderowanie warunkowe: Pokaż tylko jeśli zalogowany */}
-              {isLogged && (
-                <TouchableOpacity
-                  onPress={() => router.push("/game" as any)}
-                  activeOpacity={0.8}
-                  className="w-14 h-14 bg-secondary rounded-full justify-center items-center shadow-lg shadow-orange-500/40 border-4 border-[#000c1c] -mt-6 mx-1"
-                >
-                   <Image source={icons.play} className="size-6 ml-1" tintColor="#FFFFFF" />
-                </TouchableOpacity>
-              )}
-              
-              {/* Następnie renderujemy normalną zakładkę (TVSeries) */}
-              {tabButton}
-            </React.Fragment>
+            <TabItem
+              key={route.key}
+              focused={isFocused}
+              icon={config?.icon || icons.home}
+              title={config?.title || ""}
+              onPress={onPress}
+            />
           );
-        }
-
-        return tabButton;
-      })}
+        })}
+      </View>
     </View>
   );
 }
@@ -135,11 +165,12 @@ export default function TabsLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: true,
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Home" }} />
       <Tabs.Screen name="movies" options={{ title: "Movies" }} />
-      <Tabs.Screen name="tvseries" options={{ title: "TV/Series" }} />
+      <Tabs.Screen name="tvseries" options={{ title: "Series" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
   );

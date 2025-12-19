@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { cssInterop } from "nativewind";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -9,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import Reviews from "@/components/Reviews";
 import SaveToListModal from "@/components/SaveToListModal";
@@ -17,8 +17,15 @@ import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
 import { fetchSeasonDetails, fetchTVSeriesDetails } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
+// 1. IMPORTUJEMY KONTEKST
+import { useGlobalContext } from "@/context/GlobalProvider";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+
+// Konfiguracja nativewind dla gradientu
+cssInterop(LinearGradient, {
+  className: "style",
+});
 
 // Komponent do wyświetlania pojedynczej informacji
 interface SeriesInfoProps {
@@ -38,6 +45,8 @@ const SeriesInfo = ({ label, value }: SeriesInfoProps) => (
 const Details = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  // 2. POBIERAMY STATUS LOGOWANIA
+  const { isLogged } = useGlobalContext();
 
   const seriesId = Array.isArray(id) ? id[0] : (id as string | undefined);
   const shouldFetch = !!seriesId;
@@ -55,7 +64,7 @@ const Details = () => {
     shouldFetch
   );
 
-  // Obsługa kliknięcia w sezon (pobieranie epizodów)
+  // Obsługa kliknięcia w sezon
   const handleSeasonPress = async (seasonNumber: number, seasonId: number) => {
     if (!seriesId) return;
 
@@ -84,28 +93,52 @@ const Details = () => {
 
   if (!seriesId) return null;
 
+  // Loading State z Gradientem
   if (loading)
     return (
-      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
+      <View className="flex-1 justify-center items-center">
+        <LinearGradient
+            colors={["#000C1C", "#161622", "#1E1E2D"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            className="absolute w-full h-full"
+        />
         <ActivityIndicator size="large" color="#FF9C01" />
-      </SafeAreaView>
+      </View>
     );
 
+  // Error State z Gradientem
   if (error || !series) {
     return (
-      <SafeAreaView className="bg-primary flex-1 justify-center items-center">
+      <View className="flex-1 justify-center items-center">
+        <LinearGradient
+            colors={["#000C1C", "#161622", "#1E1E2D"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            className="absolute w-full h-full"
+        />
         <Text className="text-red-500 text-lg mb-4">
           {error ? `Error: ${error.message}` : "Series not found"}
         </Text>
         <TouchableOpacity onPress={router.back}>
           <Text className="text-secondary font-bold">Go Back</Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <View className="bg-primary flex-1">
+    // GLÓWNY WIDOK
+    <View className="flex-1">
+      
+      {/* 1. GŁÓWNE TŁO APLIKACJI (Fixed Gradient) */}
+      <LinearGradient
+        colors={["#000C1C", "#161622", "#1E1E2D"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        className="absolute top-0 left-0 right-0 bottom-0 h-full w-full"
+      />
+
       <ScrollView 
         contentContainerStyle={{ paddingBottom: 100 }} 
         showsVerticalScrollIndicator={false}
@@ -120,39 +153,41 @@ const Details = () => {
             resizeMode="cover"
           />
           
-          {/* Gradient od dołu */}
+          {/* 2. GRADIENT POD PLAKATEM (Fade to match background) */}
           <LinearGradient
-            colors={["transparent", "#161622"]}
-            style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 300 }}
+            colors={["transparent", "#161622"]} 
+            style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 350 }}
           />
 
-          {/* Przyciski Akcji */}
-          <View className="absolute bottom-10 right-5 flex-row gap-4 z-10">
-             <View className="rounded-full size-14 bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10">
-                <WatchlistButton 
-                  item={{
-                    id: series.id,
-                    name: series.name,
-                    poster_path: series.poster_path || "",
-                    vote_average: series.vote_average || 0
-                  }} 
-                  type="series"
-                />
-             </View>
+          {/* 3. WARUNEK DLA PRZYCISKÓW (Tylko dla zalogowanych) */}
+          {isLogged && (
+             <View className="absolute bottom-10 right-5 flex-row gap-4 z-10">
+                 <View className="rounded-full size-14 bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10">
+                    <WatchlistButton 
+                      item={{
+                        id: series.id,
+                        name: series.name,
+                        poster_path: series.poster_path || "",
+                        vote_average: series.vote_average || 0
+                      }} 
+                      type="series"
+                    />
+                 </View>
 
-             <TouchableOpacity 
-                onPress={() => setModalVisible(true)}
-                className="rounded-full size-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
-                activeOpacity={0.8}
-             >
-                <Image 
-                  source={icons.plus} 
-                  className="size-7" 
-                  resizeMode="contain" 
-                  tintColor="#161622" 
-                />
-             </TouchableOpacity>
-          </View>
+                 <TouchableOpacity 
+                    onPress={() => setModalVisible(true)}
+                    className="rounded-full size-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
+                    activeOpacity={0.8}
+                 >
+                    <Image 
+                      source={icons.plus} 
+                      className="size-7" 
+                      resizeMode="contain" 
+                      tintColor="#161622" 
+                    />
+                 </TouchableOpacity>
+             </View>
+          )}
         </View>
 
         {/* --- TREŚĆ --- */}
@@ -180,7 +215,7 @@ const Details = () => {
           {/* Gatunki */}
           <View className="flex-row flex-wrap gap-2 mb-6">
             {series.genres?.map((g) => (
-              <View key={g.id} className="bg-main-bg px-3 py-1.5 rounded-lg border border-gray-800">
+              <View key={g.id} className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
                 <Text className="text-gray-300 text-xs font-medium">{g.name}</Text>
               </View>
             ))}
@@ -192,15 +227,14 @@ const Details = () => {
             {series.overview}
           </Text>
 
-          {/* Info Grid - POPRAWKA: Usunięto 'Type', dodano 'Production' */}
-          <View className="flex-row justify-between bg-main-bg p-4 rounded-2xl mb-8 border border-gray-800">
+          {/* Info Grid */}
+          <View className="flex-row justify-between bg-white/5 p-4 rounded-2xl mb-8 border border-white/10">
              <View className="flex-1 mr-2">
                 <SeriesInfo label="Episodes" value={series.number_of_episodes} />
                 <SeriesInfo label="Status" value={series.status} />
              </View>
              <View className="flex-1">
                 <SeriesInfo label="Network" value={series.networks?.[0]?.name} />
-                {/* Zastąpiono błędne 'series.type' polem 'production_companies' */}
                 <SeriesInfo 
                    label="Production" 
                    value={series.production_companies?.[0]?.name} 
@@ -215,7 +249,7 @@ const Details = () => {
               series.seasons.map((season) => (
                 <View 
                   key={season.id} 
-                  className={`rounded-2xl overflow-hidden border ${expandedSeasonId === season.id ? 'border-secondary/50 bg-main-bg' : 'border-transparent bg-main-bg'}`}
+                  className={`rounded-2xl overflow-hidden border ${expandedSeasonId === season.id ? 'border-secondary/50 bg-white/5' : 'border-transparent bg-white/5'}`}
                 >
                   <TouchableOpacity
                     activeOpacity={0.7}
@@ -256,7 +290,7 @@ const Details = () => {
 
                   {/* Accordion Episodes */}
                   {expandedSeasonId === season.id && (
-                    <View className="bg-black/20 p-2 border-t border-gray-800">
+                    <View className="bg-black/20 p-2 border-t border-white/10">
                       {episodesLoading ? (
                         <ActivityIndicator size="small" color="#FF9C01" className="py-4" />
                       ) : (
@@ -299,7 +333,7 @@ const Details = () => {
                 </View>
               ))
             ) : (
-               <View className="p-4 bg-main-bg rounded-xl">
+               <View className="p-4 bg-white/5 rounded-xl">
                  <Text className="text-gray-400 text-center">No season info available.</Text>
                </View>
             )}
@@ -322,13 +356,15 @@ const Details = () => {
         />
       </TouchableOpacity>
 
-      {/* MODAL */}
-      <SaveToListModal 
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        mediaId={series.id}
-        mediaType="tv"
-      />
+      {/* MODAL (Pokaż tylko dla zalogowanych) */}
+      {isLogged && (
+          <SaveToListModal 
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            mediaId={series.id}
+            mediaType="tv"
+          />
+      )}
     </View>
   );
 };
