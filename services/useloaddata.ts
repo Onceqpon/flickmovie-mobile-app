@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const useLoadData = <T>(
   fetchFunction: () => Promise<T>,
@@ -8,41 +8,44 @@ const useLoadData = <T>(
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const fetchData = useCallback(async () => {
-    let isMounted = true;
-
     try {
       setLoading(true);
       setError(null);
 
       const result = await fetchFunction();
 
-      if (isMounted) {
+      if (isMounted.current) {
         setData(result);
       }
     } catch (err) {
-      if (isMounted) {
+      if (isMounted.current) {
         setError(
           err instanceof Error ? err : new Error("An unknown error occurred")
         );
       }
     } finally {
-      if (isMounted) {
+      if (isMounted.current) {
         setLoading(false);
       }
     }
-
-    return () => {
-      isMounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 
   const reset = useCallback(() => {
-    setData(null);
-    setError(null);
-    setLoading(false);
+    if (isMounted.current) {
+      setData(null);
+      setError(null);
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
