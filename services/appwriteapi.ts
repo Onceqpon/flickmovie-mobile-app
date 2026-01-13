@@ -1,14 +1,13 @@
 import { Account, Client, Databases, ID, Query, Storage } from "react-native-appwrite";
 
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_FLICKMOVIEDATABASE_ID!; 
-
 const MOVIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_COLLECTION_ID!;
 const SERIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_SERIES_COLLECTION_ID!;
 const WATCHLIST_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WATCHLIST_COLLECTION_ID!;
 const WATCHLIST_SERIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WATCHLIST_SERIES_COLLECTION_ID!;
 const REVIEWS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID!;
 const LISTS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_LISTS_COLLECTION_ID!;
-const GAME_HISTORY_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_GAME_HISTORY_COLLECTION_ID
+const GAME_HISTORY_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_GAME_HISTORY_COLLECTION_ID!;
 
 const STORAGE_ID = process.env.EXPO_PUBLIC_APPWRITE_STORAGE_ID!;
 const ENDPOINT = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!;
@@ -24,6 +23,8 @@ const account = new Account(client);
 const database = new Databases(client);
 const storage = new Storage(client);
 
+// --- AUTH ---
+
 export const createUser = async (email: string, password: string, username: string) => {
   try {
     const newAccount = await account.create(ID.unique(), email, password, username);
@@ -34,7 +35,6 @@ export const createUser = async (email: string, password: string, username: stri
 
     return currentUser;
   } catch (error: any) {
-    console.log(error);
     throw new Error(error.message || "Unknown error");
   }
 };
@@ -44,7 +44,6 @@ export const signIn = async (email: string, password: string) => {
     const session = await account.createEmailPasswordSession(email, password);
     return session;
   } catch (error: any) {
-    console.log(error);
     throw new Error(error.message || "Login failed");
   }
 };
@@ -53,7 +52,6 @@ export const getCurrentUser = async () => {
   try {
     const currentAccount = await account.get();
     if (!currentAccount) throw new Error("No user logged in");
-
     return currentAccount;
   } catch {
     return null;
@@ -87,6 +85,17 @@ export const updateUserPassword = async (password: string, oldPassword: string) 
   }
 };
 
+export const updateUserAvatar = async (avatarUrl: string) => {
+  try {
+    const result = await account.updatePrefs({ avatar: avatarUrl });
+    return result;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update avatar");
+  }
+};
+
+// --- STORAGE ---
+
 export const uploadFile = async (file: { uri: string; name: string; type: string }) => {
   if (!file) return;
 
@@ -103,7 +112,6 @@ export const uploadFile = async (file: { uri: string; name: string; type: string
     );
 
     const fileUrl = `${ENDPOINT}/storage/buckets/${STORAGE_ID}/files/${uploadedFile.$id}/view?project=${PROJECT_ID}`;
-    
     return fileUrl;
   } catch (error: any) {
     throw new Error(error.message || "File upload failed");
@@ -115,19 +123,12 @@ export const deleteFile = async (fileId: string) => {
     await storage.deleteFile(STORAGE_ID, fileId);
     return true;
   } catch (error: any) {
-    console.log("Error deleting file:", error);
+    console.error("Error deleting file:", error);
     return false;
   }
 };
 
-export const updateUserAvatar = async (avatarUrl: string) => {
-  try {
-    const result = await account.updatePrefs({ avatar: avatarUrl });
-    return result;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update avatar");
-  }
-};
+// --- TRENDING & SEARCH STATS ---
 
 export const updateSearchCount = async (query: string, movie: Movie) => {
   try {
@@ -226,6 +227,8 @@ export const getTrendingSeries = async (): Promise<TrendingSeries[]> => {
   }
 };
 
+// --- WATCHLIST (MOVIES) ---
+
 export const addToWatchlist = async (
   userId: string,
   movie: { id: number; title: string; poster_path: string; vote_average: number }
@@ -300,6 +303,23 @@ export const checkIsOnWatchlist = async (userId: string, movieId: number) => {
   }
 };
 
+export const getWatchlistCount = async (userId: string) => {
+  try {
+    const result = await database.listDocuments(
+      DATABASE_ID,
+      WATCHLIST_COLLECTION_ID,
+      [
+        Query.equal("user_Id", userId),
+        Query.limit(1)
+      ]
+    );
+    return result.total;
+  } catch (error) {
+    console.error("Error fetching watchlist count:", error);
+    return 0;
+  }
+};
+
 // --- WATCHLIST (SERIES) ---
 
 export const addToWatchlistSeries = async (
@@ -353,7 +373,7 @@ export const getUserWatchlistSeries = async (userId: string) => {
     );
     return result.documents.map((doc) => ({
       id: doc.series_id,
-      title: doc.name, // Mapping 'name' to 'title' for easier rendering in UI
+      title: doc.name, 
       poster_path: doc.poster_path,
       vote_average: doc.vote_average,
       $id: doc.$id, 
@@ -376,23 +396,6 @@ export const checkIsOnWatchlistSeries = async (userId: string, seriesId: number)
   }
 };
 
-export const getWatchlistCount = async (userId: string) => {
-  try {
-    const result = await database.listDocuments(
-      DATABASE_ID,
-      WATCHLIST_COLLECTION_ID,
-      [
-        Query.equal("user_Id", userId),
-        Query.limit(1) // Pobieramy tylko 1, bo interesuje nas tylko 'total'
-      ]
-    );
-    return result.total;
-  } catch (error) {
-    console.error("Error fetching watchlist count:", error);
-    return 0;
-  }
-};
-
 export const getWatchlistSeriesCount = async (userId: string) => {
   try {
     const result = await database.listDocuments(
@@ -409,6 +412,8 @@ export const getWatchlistSeriesCount = async (userId: string) => {
     return 0;
   }
 };
+
+// --- REVIEWS ---
 
 export const getReviews = async (id: number, type: "movie" | "series") => {
   const attribute = type === "movie" ? "movie_id" : "series_id";
@@ -501,172 +506,6 @@ export const deleteReview = async (reviewId: string) => {
   }
 };
 
-export const createList = async (userId: string, listName: string, description: string = "") => {
-  try {
-    const newList = await database.createDocument(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      ID.unique(),
-      {
-        user_id: userId,
-        name: listName,
-        description: description,
-        items: [] // Pusta tablica na start
-      }
-    );
-    return newList;
-  } catch (error: any) {
-    console.error("Error creating list:", error);
-    throw new Error(error.message || "Failed to create list");
-  }
-};
-
-export const getUserLists = async (userId: string) => {
-  try {
-    const result = await database.listDocuments(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      [Query.equal("user_id", userId), Query.orderDesc("$createdAt")]
-    );
-    return result.documents;
-  } catch (error: any) {
-    console.error("Error fetching user lists:", error);
-    throw new Error(error.message || "Failed to fetch lists");
-  }
-};
-
-export const addItemToList = async (listId: string, itemId: string, type: "movie" | "tv") => {
-  try {
-    // 1. Pobierz aktualną wersję listy, aby dostać tablicę items
-    const currentList = await database.getDocument(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      listId
-    );
-
-    // Formatujemy item jako "typ:id", np. "movie:550"
-    const itemString = `${type}:${itemId}`;
-    
-    // Sprawdź czy element już istnieje, aby uniknąć duplikatów
-    // (rzutujemy currentList.items na string[], bo Appwrite zwraca tablicę)
-    const currentItems = currentList.items as string[];
-
-    if (currentItems.includes(itemString)) {
-      return currentList; // Już jest na liście, zwracamy bez zmian
-    }
-
-    // 2. Zaktualizuj dokument dodając nowy element
-    const updatedList = await database.updateDocument(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      listId,
-      {
-        items: [...currentItems, itemString]
-      }
-    );
-    return updatedList;
-  } catch (error: any) {
-    console.error("Error adding item to list:", error);
-    throw new Error(error.message || "Failed to add item to list");
-  }
-};
-
-export const removeItemFromList = async (listId: string, itemId: string, type: "movie" | "tv") => {
-  try {
-    // 1. Pobierz aktualną listę
-    const currentList = await database.getDocument(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      listId
-    );
-
-    const itemString = `${type}:${itemId}`;
-    const currentItems = currentList.items as string[];
-
-    // 2. Filtrujemy tablicę, usuwając szukany element
-    const newItems = currentItems.filter((item) => item !== itemString);
-
-    // 3. Aktualizujemy dokument
-    const updatedList = await database.updateDocument(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      listId,
-      {
-        items: newItems
-      }
-    );
-    return updatedList;
-  } catch (error: any) {
-    console.error("Error removing item from list:", error);
-    throw new Error(error.message || "Failed to remove item from list");
-  }
-};
-
-export const updateList = async (listId: string, name: string, description: string) => {
-  try {
-    const updatedList = await database.updateDocument(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      listId,
-      {
-        name: name,
-        description: description,
-      }
-    );
-    return updatedList;
-  } catch (error: any) {
-    console.error("Error updating list:", error);
-    throw new Error(error.message || "Failed to update list");
-  }
-};
-
-// Delete a List
-export const deleteList = async (listId: string) => {
-  try {
-    await database.deleteDocument(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      listId
-    );
-    return true;
-  } catch (error: any) {
-    console.error("Error deleting list:", error);
-    throw new Error(error.message || "Failed to delete list");
-  }
-};
-
-export const getListDetails = async (listId: string) => {
-  try {
-    const doc = await database.getDocument(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      listId
-    );
-    return doc;
-  } catch (error: any) {
-    console.error("Error fetching list details:", error);
-    throw new Error(error.message || "Failed to fetch list details");
-  }
-};
-
-export const getListsCount = async (userId: string) => {
-  try {
-    const result = await database.listDocuments(
-      DATABASE_ID,
-      LISTS_COLLECTION_ID,
-      [
-        Query.equal("user_id", userId),
-        Query.limit(1) // Pobieramy 1, ale interesuje nas 'total'
-      ]
-    );
-    return result.total;
-  } catch (error) {
-    console.error("Error fetching lists count:", error);
-    return 0;
-  }
-};
-
-// Pobierz liczbę recenzji użytkownika
 export const getReviewsCount = async (userId: string) => {
   try {
     const result = await database.listDocuments(
@@ -684,15 +523,165 @@ export const getReviewsCount = async (userId: string) => {
   }
 };
 
+// --- CUSTOM LISTS ---
+
+export const createList = async (userId: string, listName: string, description: string = "") => {
+  try {
+    const newList = await database.createDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      ID.unique(),
+      {
+        user_id: userId,
+        name: listName,
+        description: description,
+        items: []
+      }
+    );
+    return newList;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to create list");
+  }
+};
+
+export const getUserLists = async (userId: string) => {
+  try {
+    const result = await database.listDocuments(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      [Query.equal("user_id", userId), Query.orderDesc("$createdAt")]
+    );
+    return result.documents;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch lists");
+  }
+};
+
+export const addItemToList = async (listId: string, itemId: string, type: "movie" | "tv") => {
+  try {
+    const currentList = await database.getDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId
+    );
+
+    const itemString = `${type}:${itemId}`;
+    const currentItems = currentList.items as string[];
+
+    if (currentItems.includes(itemString)) {
+      return currentList; 
+    }
+
+    const updatedList = await database.updateDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId,
+      {
+        items: [...currentItems, itemString]
+      }
+    );
+    return updatedList;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to add item to list");
+  }
+};
+
+export const removeItemFromList = async (listId: string, itemId: string, type: "movie" | "tv") => {
+  try {
+    const currentList = await database.getDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId
+    );
+
+    const itemString = `${type}:${itemId}`;
+    const currentItems = currentList.items as string[];
+
+    const newItems = currentItems.filter((item) => item !== itemString);
+
+    const updatedList = await database.updateDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId,
+      {
+        items: newItems
+      }
+    );
+    return updatedList;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to remove item from list");
+  }
+};
+
+export const updateList = async (listId: string, name: string, description: string) => {
+  try {
+    const updatedList = await database.updateDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId,
+      {
+        name: name,
+        description: description,
+      }
+    );
+    return updatedList;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update list");
+  }
+};
+
+export const deleteList = async (listId: string) => {
+  try {
+    await database.deleteDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId
+    );
+    return true;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to delete list");
+  }
+};
+
+export const getListDetails = async (listId: string) => {
+  try {
+    const doc = await database.getDocument(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      listId
+    );
+    return doc;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch list details");
+  }
+};
+
+export const getListsCount = async (userId: string) => {
+  try {
+    const result = await database.listDocuments(
+      DATABASE_ID,
+      LISTS_COLLECTION_ID,
+      [
+        Query.equal("user_id", userId),
+        Query.limit(1)
+      ]
+    );
+    return result.total;
+  } catch (error) {
+    console.error("Error fetching lists count:", error);
+    return 0;
+  }
+};
+
+// --- GAME HISTORY ---
+
 export const saveGameToHistory = async (userId: string, items: any[]) => {
   try {
-    // Appwrite nie obsługuje natywnie tablic obiektów w prostych atrybutach,
-    // więc konwertujemy tablicę filmów na String JSON.
     const jsonItems = JSON.stringify(items);
 
     const newEntry = await database.createDocument(
       DATABASE_ID,
-      GAME_HISTORY_COLLECTION_ID!, // Wykrzyknik zapewnia TS, że zmienna istnieje
+      GAME_HISTORY_COLLECTION_ID,
       ID.unique(),
       {
         user_id: userId,
@@ -701,31 +690,25 @@ export const saveGameToHistory = async (userId: string, items: any[]) => {
     );
     return newEntry;
   } catch (error: any) {
-    console.error("Error saving game history:", error);
     throw new Error(error.message);
   }
 };
 
-// 2. Pobierz historię gier użytkownika
 export const getUserGameHistory = async (userId: string) => {
-  console.log("DEBUG: Próba pobrania historii dla ID:", userId, "Typ:", typeof userId);
-  
   if (!userId) {
-      console.error("BŁĄD: userId jest puste!");
-      return []; // Zwróć pustą tablicę, aby nie wywoływać błędu API
+      return []; 
   }
 
   try {
     const result = await database.listDocuments(
       DATABASE_ID,
-      GAME_HISTORY_COLLECTION_ID!,
+      GAME_HISTORY_COLLECTION_ID,
       [
         Query.equal('user_id', userId),
-        Query.orderDesc('$createdAt') // Najnowsze gry na górze
+        Query.orderDesc('$createdAt') 
       ]
     );
 
-    // Parsujemy string 'items' z powrotem na obiekt JSON (tablicę)
     const documents = result.documents.map((doc: any) => ({
       ...doc,
       items: JSON.parse(doc.items) 
@@ -738,17 +721,15 @@ export const getUserGameHistory = async (userId: string) => {
   }
 };
 
-// 3. Usuń wpis z historii
 export const deleteGameHistoryEntry = async (documentId: string) => {
   try {
     await database.deleteDocument(
       DATABASE_ID,
-      GAME_HISTORY_COLLECTION_ID!,
+      GAME_HISTORY_COLLECTION_ID,
       documentId
     );
     return true;
   } catch (error: any) {
-    console.error("Error deleting game history:", error);
     throw new Error(error.message);
   }
 };

@@ -1,7 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { cssInterop } from "nativewind"; // DODANO
+import { cssInterop } from "nativewind";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -14,18 +14,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Importy komponentów i serwisów
 import MovieCard from "@/components/MovieCard";
 import TVSeriesCard from "@/components/TVSeriesCard";
 import { icons } from "@/constants/icons";
 import { fetchMovies, fetchTVSeries } from "@/services/tmdbapi";
 
-// Konfiguracja Gradientu
 cssInterop(LinearGradient, {
   className: "style",
 });
 
-// --- KONFIGURACJA WYMIARÓW ---
 const { width } = Dimensions.get("window");
 const COLUMNS = 2;
 const PADDING_HORIZONTAL = 16;
@@ -48,7 +45,6 @@ const CategoryList = () => {
 
   useEffect(() => {
     loadData();
-    // Przewiń na górę przy zmianie strony
     if (flatListRef.current) {
       flatListRef.current.scrollToOffset({ offset: 0, animated: true });
     }
@@ -59,18 +55,14 @@ const CategoryList = () => {
     else setIsRefreshing(true);
     
     try {
-      // 1. Sprawdzamy czy ID to liczba (Gatunek) czy tekst (Sortowanie)
       const paramId = Array.isArray(id) ? id[0] : id;
       const isGenre = !isNaN(Number(paramId));
 
-      // 2. Przygotowujemy parametry zapytania
       let apiParams: any = { page: page };
 
       if (isGenre) {
-        // To jest kategoria (np. Action, id: 28)
         apiParams.genreId = paramId;
       } else {
-        // To jest lista specjalna (np. Popular, id: 'popularity.desc')
         apiParams.sortBy = paramId === 'popular' ? 'popularity.desc' : paramId;
       }
 
@@ -93,10 +85,7 @@ const CategoryList = () => {
   const handlePrevPage = () => setPage((prev) => (prev > 1 ? prev - 1 : 1));
 
   return (
-    // Główny kontener z ciemnym tłem (eliminuje błyski)
     <View className="flex-1 bg-[#000C1C]">
-      
-      {/* GLOBALNE TŁO GRADIENTOWE */}
       <LinearGradient
         colors={["#000C1C", "#161622", "#1E1E2D"]}
         start={{ x: 0, y: 0 }}
@@ -105,8 +94,6 @@ const CategoryList = () => {
       />
 
       <SafeAreaView className="flex-1">
-        
-        {/* --- HEADER --- */}
         <View className="px-4 pt-2 pb-4 flex-row items-center justify-between z-10">
           <View>
             <TouchableOpacity 
@@ -133,7 +120,6 @@ const CategoryList = () => {
             </Text>
         </View>
 
-        {/* --- LISTA --- */}
         {loading && page === 1 ? (
           <View className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color="#FF9C01" />
@@ -145,28 +131,22 @@ const CategoryList = () => {
             keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
             numColumns={COLUMNS}
             showsVerticalScrollIndicator={false}
-            
-            // Optymalizacja renderowania
             initialNumToRender={6}
             maxToRenderPerBatch={6}
             windowSize={5}
-
             contentContainerStyle={{ 
               paddingHorizontal: PADDING_HORIZONTAL, 
               paddingBottom: 120, 
               gap: GAP 
             }}
-            
             columnWrapperStyle={{ 
               justifyContent: 'space-between' 
             }} 
-            
             renderItem={({ item }) => (
               <View 
                 style={{ 
                   width: ITEM_WIDTH, 
                   height: ITEM_WIDTH / ASPECT_RATIO,
-                  // Cienie usunięte z View, bo MovieCard/TVSeriesCard mają swoje style
                 }}
               >
                   {isTv ? (
@@ -182,8 +162,6 @@ const CategoryList = () => {
                   )}
               </View>
             )}
-            
-            // --- PAGINACJA ---
             ListFooterComponent={() => (
               <View className="mt-10 mb-6 items-center">
                  <View className="flex-row items-center bg-white/10 px-2 py-2 rounded-full border border-white/10">
@@ -223,7 +201,6 @@ const CategoryList = () => {
         )}
       </SafeAreaView>
       
-      {/* Transparentny pasek statusu, aby gradient wchodził pod spód */}
       <StatusBar style="light" backgroundColor="transparent" translucent />
     </View>
   );

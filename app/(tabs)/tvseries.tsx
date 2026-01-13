@@ -12,17 +12,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { icons } from "@/constants/icons";
-import { fetchTVSeries } from "@/services/tmdbapi";
-import useLoadData from "@/services/useloaddata";
-// 1. IMPORTUJEMY KONTEKST
-import { useGlobalContext } from "@/context/GlobalProvider";
-
 import FlickMatchBanner from "@/components/FlickMatchBanner";
 import SearchBar from "@/components/SearchBar";
 import TVSeriesCard from "@/components/TVSeriesCard";
+import { icons } from "@/constants/icons";
+import { useGlobalContext } from "@/context/GlobalProvider";
+import { fetchTVSeries } from "@/services/tmdbapi";
+import useLoadData from "@/services/useloaddata";
 
-// --- KOMPONENT KARTY "MORE" ---
 const MoreCard = ({ onPress }: { onPress: () => void }) => {
   return (
     <TouchableOpacity
@@ -124,11 +121,8 @@ const GenreSection = ({ genre }: { genre: { id: number; name: string } }) => {
   );
 };
 
-// --- GŁÓWNY KOMPONENT ---
 const TVSeries = () => {
   const router = useRouter();
-  
-  // 2. POBIERAMY DANE UŻYTKOWNIKA
   const { user } = useGlobalContext();
   const rawAvatar = (user?.prefs as any)?.avatar;
   const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
@@ -150,7 +144,6 @@ const TVSeries = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* --- CUSTOM HEADER --- */}
           <View className="flex-row justify-between items-center px-5 mt-2 mb-6">
             <View>
               <Text className="font-pmedium text-sm text-gray-200">Browse by Genre</Text>
@@ -159,7 +152,6 @@ const TVSeries = () => {
               </Text>
             </View>
             
-            {/* 3. TU WKLEJAMY TWÓJ KOD (z małymi poprawkami stylów) */}
             <TouchableOpacity 
                 className="w-10 h-10 bg-white/10 rounded-full justify-center items-center border border-white/20 overflow-hidden"
                 onPress={() => router.push('/profile')}
@@ -172,8 +164,8 @@ const TVSeries = () => {
                   />
                 ) : (
                   <Image 
-                    source={icons.user || icons.user} // Upewnij się co do nazwy ikony
-                    className="w-6 h-6" // Zmniejszyłem lekko, żeby mieściła się w kółku
+                    source={icons.user}
+                    className="w-6 h-6"
                     resizeMode="contain" 
                     tintColor="#fff"
                   />

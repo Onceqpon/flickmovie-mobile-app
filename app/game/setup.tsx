@@ -1,25 +1,23 @@
-import { icons } from "@/constants/icons";
-// CHANGE: Importing separated genre lists
-import { MOVIE_GENRES, TV_GENRES, WATCH_PROVIDERS } from "@/services/tmdbapi";
-import { LinearGradient } from "expo-linear-gradient"; // 1. IMPORT GRADIENTU
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, LayoutAnimation, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type Step = 0 | 1 | 2; // 0: Type, 1: VOD, 2: Genres
+import { icons } from "@/constants/icons";
+import { MOVIE_GENRES, TV_GENRES, WATCH_PROVIDERS } from "@/services/tmdbapi";
+
+type Step = 0 | 1 | 2;
 type ContentType = 'movie' | 'tv' | null;
 
 export default function GameSetup() {
   const router = useRouter();
   
-  // States
   const [currentStep, setCurrentStep] = useState<Step>(0);
   const [contentType, setContentType] = useState<ContentType>(null);
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [selectedProviders, setSelectedProviders] = useState<number[]>([]);
 
-  // Selection logic
   const toggleSelection = (id: number, list: number[], setList: React.Dispatch<React.SetStateAction<number[]>>) => {
     if (list.includes(id)) {
       setList(list.filter((item) => item !== id));
@@ -48,7 +46,6 @@ export default function GameSetup() {
 
   const selectType = (type: 'movie' | 'tv') => {
     setContentType(type);
-    // CHANGE: Reset genres on type change to avoid invalid IDs
     setSelectedGenres([]); 
     handleNextStep();
   };
@@ -64,9 +61,6 @@ export default function GameSetup() {
     } as any); 
   };
 
-  // --- STEP COMPONENTS ---
-
-  // STEP 1: SELECT TYPE
   const renderStepType = () => (
     <View className="flex-1 justify-center gap-6 mt-10">
       <TouchableOpacity 
@@ -99,7 +93,6 @@ export default function GameSetup() {
     </View>
   );
 
-  // STEP 2: VOD
   const renderStepVOD = () => (
     <ScrollView showsVerticalScrollIndicator={false}>
       <Text className="text-2xl text-white font-bold mb-2">Where do you watch?</Text>
@@ -129,9 +122,7 @@ export default function GameSetup() {
     </ScrollView>
   );
 
-  // STEP 3: GENRES (MODIFIED)
   const renderStepGenres = () => {
-    // CHANGE: Dynamic list selection based on contentType
     const currentGenresList = contentType === 'tv' ? TV_GENRES : MOVIE_GENRES;
 
     return (
@@ -167,22 +158,19 @@ export default function GameSetup() {
 
   return (
     <View className="flex-1 bg-primary">
-        {/* 2. TŁO GRADIENTOWE */}
         <LinearGradient
-                colors={["#000C1C", "#161622", "#1E1E2D"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                className="absolute w-full h-full"
-              />
+            colors={["#000C1C", "#161622", "#1E1E2D"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            className="absolute w-full h-full"
+        />
 
         <SafeAreaView className="flex-1 px-5">
-        {/* HEADER */}
         <View className="flex-row items-center justify-between mt-4 mb-6">
             <TouchableOpacity onPress={handleBack} className="p-2 bg-black-100 rounded-full border border-gray-800">
                 <Image source={icons.left_arrow} className="w-5 h-5" tintColor="white" />
             </TouchableOpacity>
             
-            {/* Progress bar (dots) */}
             <View className="flex-row gap-2">
                 {[0, 1, 2].map(step => (
                     <View 
@@ -192,18 +180,15 @@ export default function GameSetup() {
                 ))}
             </View>
             
-            {/* Empty view for symmetry */}
             <View className="w-9" />
         </View>
 
-        {/* MAIN CONTENT */}
         <View className="flex-1">
             {currentStep === 0 && renderStepType()}
             {currentStep === 1 && renderStepVOD()}
             {currentStep === 2 && renderStepGenres()}
         </View>
 
-        {/* BOTTOM BUTTON (Only for steps 1 and 2, because step 0 is automatic) */}
         {currentStep > 0 && (
             <View className="mb-4 pt-4 border-t border-gray-900">
                 <TouchableOpacity

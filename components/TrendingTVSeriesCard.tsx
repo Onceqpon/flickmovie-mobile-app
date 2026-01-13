@@ -5,7 +5,11 @@ import { Image, Text, TouchableOpacity, View } from "react-native";
 import { images } from "@/constants/images";
 
 interface TrendingSeriesCardProps {
-  series: TrendingSeries;
+  series: {
+    series_id: number;
+    name: string;
+    poster_url: string;
+  };
   index: number;
 }
 
@@ -29,8 +33,8 @@ const TrendingTVSeriesCard = ({
             }
           >
             <Image
-              source={images.btbackground} // Używamy tego samego tła dla numerka co w filmach
-              className="size-14"
+              source={images.btbackground}
+              className="w-14 h-14"
               resizeMode="cover"
             />
           </MaskedView>

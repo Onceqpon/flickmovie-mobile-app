@@ -1,14 +1,14 @@
-import { useGlobalContext } from "@/context/GlobalProvider";
-import { getUserReviews } from "@/services/appwriteapi";
 import { FontAwesome } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from "expo-router";
+import { cssInterop } from "nativewind";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { icons } from '@/constants/icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { cssInterop } from "nativewind";
+import { useGlobalContext } from "@/context/GlobalProvider";
+import { getUserReviews } from "@/services/appwriteapi";
 
 cssInterop(LinearGradient, {
   className: "style",
@@ -99,24 +99,20 @@ const Ratings = () => {
   };
 
   return (
-    // ZMIANA 1: Główny kontener to View
     <View className="flex-1 bg-[#1E1E2D]">
-      
-      {/* ZMIANA 2: Gradient obejmuje cały ekran (wchodzi pod pasek na dole) */}
       <LinearGradient
           colors={["#000C1C", "#161622", "#1E1E2D"]}
           className="absolute w-full h-full"
         />
 
-      {/* ZMIANA 3: SafeAreaView wewnątrz, chroni treść */}
       <SafeAreaView className="flex-1">
           <View className="flex-row items-center px-4 my-6">
             <TouchableOpacity 
-                onPress={() => router.back()} 
-                className="bg-black-100 p-2 rounded-full mr-4 border border-black-200 "
+              onPress={() => router.back()} 
+              className="bg-black-100 p-2 rounded-full mr-4 border border-black-200 "
             >
                 <Image
-                    source={icons.left_arrow || icons.angle_left}
+                    source={icons.left_arrow}
                     className="w-5 h-5"
                     resizeMode="contain"
                     tintColor="white"

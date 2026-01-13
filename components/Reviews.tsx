@@ -1,8 +1,9 @@
-import { useGlobalContext } from "@/context/GlobalProvider";
-import { createReview, deleteReview, getReviews, updateReview } from "@/services/appwriteapi";
 import { FontAwesome } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+
+import { useGlobalContext } from "@/context/GlobalProvider";
+import { createReview, deleteReview, getReviews, updateReview } from "@/services/appwriteapi";
 
 interface ReviewsProps {
   movieId?: number;
@@ -124,7 +125,6 @@ const Reviews = ({ movieId, seriesId, title, posterPath }: ReviewsProps) => {
   };
 
   const renderStars = (currentRating: number, interactive: boolean = false) => {
-     // ... (kod z poprzedniej wersji)
      return (
       <View className="flex-row">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -146,7 +146,6 @@ const Reviews = ({ movieId, seriesId, title, posterPath }: ReviewsProps) => {
   };
   
   const renderReviewForm = () => (
-     // ... (kod z poprzedniej wersji)
      <View className="bg-gray-800 p-4 rounded-xl mb-6">
       <Text className="text-white font-semibold mb-2">
         {isEditing ? "Edit Your Review" : "Write a Review"}

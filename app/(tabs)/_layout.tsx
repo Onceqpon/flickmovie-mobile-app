@@ -21,7 +21,6 @@ const TAB_CONFIG: Record<string, { icon: ImageSourcePropType; title: string }> =
   profile: { icon: icons.user, title: "Profile" },
 };
 
-// --- KOMPONENT POJEDYNCZEJ ZAKŁADKI ---
 const TabItem = ({
   focused,
   icon,
@@ -72,7 +71,6 @@ const TabItem = ({
   );
 };
 
-// --- ŚRODKOWY PRZYCISK (PLAY) ---
 const PlayButton = ({ onPress }: { onPress: () => void }) => (
   <TouchableOpacity
     onPress={() => {
@@ -97,7 +95,6 @@ const PlayButton = ({ onPress }: { onPress: () => void }) => (
   </TouchableOpacity>
 );
 
-// --- PASEK NAWIGACJI ---
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const router = useRouter();
   const { isLogged } = useGlobalContext();
@@ -123,7 +120,6 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             }
           };
 
-          // POPRAWKA TUTAJ: Klucz "key" jest teraz na React.Fragment i jest równy route.key
           if (index === 2) {
             return (
               <React.Fragment key={route.key}>
@@ -133,7 +129,6 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                   <View className="w-8" />
                 )}
                 
-                {/* Usunięto key={route.key} z TabItem, bo jest już na Fragmencie */}
                 <TabItem
                   focused={isFocused}
                   icon={config?.icon || icons.home}

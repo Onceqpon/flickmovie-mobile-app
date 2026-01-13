@@ -1,20 +1,17 @@
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import * as NavigationBar from 'expo-navigation-bar';
 import { Stack } from "expo-router";
-import './globals.css';
-
-import GlobalProvider from "@/context/GlobalProvider";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import { Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from "react-native-reanimated";
 
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-
-import * as NavigationBar from 'expo-navigation-bar';
-import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { Platform } from "react-native";
-
-import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import GlobalProvider from "@/context/GlobalProvider";
+import './globals.css';
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -40,9 +37,8 @@ export default function RootLayout() {
         try {
           await NavigationBar.setPositionAsync("absolute");
           await NavigationBar.setVisibilityAsync("hidden");
-          
         } catch (e) {
-          console.log("Błąd ukrywania pasków:", e);
+          console.error("Error hiding system bars:", e);
         }
       }
     };
@@ -54,96 +50,25 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000C1C' }}>
       <GlobalProvider>
         <ThemeProvider value={MyDarkTheme}>
-          <Stack> 
-            <Stack.Screen 
-              name="(tabs)" 
-              options={{ 
-                headerShown: false 
-              }} 
-            />
-            <Stack.Screen 
-              name="game" 
-              options={{ 
-                headerShown: false 
-              }} 
-            />
-            <Stack.Screen 
-              name="(auth)"
-              options={{
-                headerShown: false 
-              }} 
-            />
-            <Stack.Screen
-              name="movies/[id]"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="tvseries/[id]"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="search/search"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-                name="profile/edit"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="profile/change-password"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="profile/watchlist"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="profile/ratings"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="profile/lists"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="profile/lists/[id]"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="profile/game-history"
-                options={{
-                  headerShown: false,
-                }}
-              />
-               <Stack.Screen
-                name="category/[id]"
-                options={{
-                  headerShown: false,
-                }}
-              />     
+          <Stack screenOptions={{ headerShown: false }}> 
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="game" />
+            <Stack.Screen name="movies/[id]" />
+            <Stack.Screen name="tvseries/[id]" />
+            <Stack.Screen name="search/search" />
+            <Stack.Screen name="profile/edit" />
+            <Stack.Screen name="profile/change-password" />
+            <Stack.Screen name="profile/watchlist" />
+            <Stack.Screen name="profile/ratings" />
+            <Stack.Screen name="profile/lists" />
+            <Stack.Screen name="profile/lists/[id]" />
+            <Stack.Screen name="profile/game-history" />
+            <Stack.Screen name="category/[id]" />
           </Stack>
         </ThemeProvider>
         
         <StatusBar hidden={true} style="light" backgroundColor="#000C1C" />
-
       </GlobalProvider> 
     </GestureHandlerRootView>
   );

@@ -1,4 +1,4 @@
-import { LinearGradient } from "expo-linear-gradient"; // Wymagany pakiet
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { cssInterop } from "nativewind";
 import { useState } from "react";
@@ -15,19 +15,16 @@ import Reviews from "@/components/Reviews";
 import SaveToListModal from "@/components/SaveToListModal";
 import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
+import { useGlobalContext } from "@/context/GlobalProvider";
 import { fetchMovieDetails } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
-// 1. IMPORT KONTEKSTU
-import { useGlobalContext } from "@/context/GlobalProvider";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-// Konfiguracja nativewind dla gradientu
 cssInterop(LinearGradient, {
   className: "style",
 });
 
-// --- FORMATOWANIE WALUTY ---
 const formatCurrency = (amount: number | undefined): string => {
   if (!amount || amount === 0) return "N/A";
   return new Intl.NumberFormat("en-US", {
@@ -38,7 +35,6 @@ const formatCurrency = (amount: number | undefined): string => {
   }).format(amount);
 };
 
-// --- KOMPONENT INFORMACYJNY (GRID) ---
 interface MovieInfoProps {
   label: string;
   value?: string | number | null;
@@ -58,7 +54,6 @@ const MovieInfo = ({ label, value }: MovieInfoProps) => (
 const Details = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  // 2. POBIERAMY STATUS LOGOWANIA
   const { isLogged } = useGlobalContext();
   
   const [modalVisible, setModalVisible] = useState(false);
@@ -108,8 +103,6 @@ const Details = () => {
 
   return (
     <View className="flex-1 bg-primary">
-      
-      {/* 1. TŁO GRADIENTOWE CAŁEGO EKRANU */}
       <LinearGradient
         colors={["#000C1C", "#161622", "#1E1E2D"]}
         className="absolute w-full h-full"
@@ -119,7 +112,6 @@ const Details = () => {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* --- HEADER: PLAKAT + GRADIENT --- */}
         <View className="relative w-full h-[550px]">
           <Image
             source={{
@@ -129,7 +121,6 @@ const Details = () => {
             resizeMode="cover"
           />
 
-          {/* Gradient od dołu (fade plakatu w tło) */}
           <LinearGradient
             colors={["transparent", "#161622"]}
             style={{
@@ -141,11 +132,9 @@ const Details = () => {
             }}
           />
 
-          {/* 3. PRZYCISKI AKCJI (Tylko dla zalogowanych) */}
           {isLogged && (
             <View className="absolute bottom-10 right-5 flex-row gap-4 z-10">
-                {/* Watchlist Button */}
-                <View className="rounded-full size-14 bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10">
+                <View className="rounded-full w-14 h-14 bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10">
                 <WatchlistButton
                     item={{
                     id: movie.id,
@@ -157,15 +146,14 @@ const Details = () => {
                 />
                 </View>
 
-                {/* Add To List Button */}
                 <TouchableOpacity
                 onPress={() => setModalVisible(true)}
-                className="rounded-full size-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
+                className="rounded-full w-14 h-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
                 activeOpacity={0.8}
                 >
                 <Image
                     source={icons.plus}
-                    className="size-7"
+                    className="w-7 h-7"
                     resizeMode="contain"
                     tintColor="#161622"
                 />
@@ -174,14 +162,11 @@ const Details = () => {
           )}
         </View>
 
-        {/* --- TREŚĆ --- */}
         <View className="px-5 -mt-6">
-          {/* Tytuł */}
           <Text className="text-white font-black text-3xl mb-2 leading-tight">
             {movie.title}
           </Text>
 
-          {/* Meta Info (Rok | Czas trwania | Ocena) */}
           <View className="flex-row items-center flex-wrap gap-3 mb-5">
             <Text className="text-gray-300 font-medium">
               {movie.release_date?.split("-")[0]}
@@ -192,7 +177,7 @@ const Details = () => {
             <View className="flex-row items-center gap-1 bg-white/10 px-2 py-0.5 rounded text-xs">
               <Image
                 source={icons.star}
-                className="size-3.5"
+                className="w-3.5 h-3.5"
                 tintColor="#FF9C01"
               />
               <Text className="text-secondary font-bold">
@@ -201,7 +186,6 @@ const Details = () => {
             </View>
           </View>
 
-          {/* Gatunki (Pills) */}
           <View className="flex-row flex-wrap gap-2 mb-6">
             {movie.genres?.map((g) => (
               <View
@@ -215,13 +199,11 @@ const Details = () => {
             ))}
           </View>
 
-          {/* Opis */}
           <Text className="text-white font-bold text-lg mb-2">Overview</Text>
           <Text className="text-gray-300 text-base leading-6 mb-6">
             {movie.overview}
           </Text>
 
-          {/* Info Grid (Budżet, Przychód, Studio) */}
           <View className="flex-row justify-between bg-white/5 p-4 rounded-2xl mb-8 border border-white/10">
             <View className="flex-1 mr-2">
               <MovieInfo label="Budget" value={formatCurrency(movie.budget)} />
@@ -252,20 +234,18 @@ const Details = () => {
         />
       </ScrollView>
 
-      {/* --- BACK BUTTON --- */}
       <TouchableOpacity
         className="absolute top-14 left-5 bg-black/40 backdrop-blur-md rounded-full p-2.5 z-50 border border-white/10"
         onPress={router.back}
       >
         <Image
           source={icons.angle_left}
-          className="size-6"
+          className="w-6 h-6"
           resizeMode="contain"
           tintColor="#FFFFFF"
         />
       </TouchableOpacity>
 
-      {/* --- MODAL (Tylko dla zalogowanych) --- */}
       {isLogged && (
           <SaveToListModal
             visible={modalVisible}

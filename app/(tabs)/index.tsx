@@ -12,14 +12,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Importy serwisów
 import { icons } from "@/constants/icons";
 import { useGlobalContext } from "@/context/GlobalProvider";
 import { getTrendingMovies, getTrendingSeries } from "@/services/appwriteapi";
 import { fetchMovies, fetchTVSeries, SORT_OPTIONS } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
 
-// Komponenty
 import FlickMatchBanner from "@/components/FlickMatchBanner";
 import MovieCard from "@/components/MovieCard";
 import SearchBar from "@/components/SearchBar";
@@ -27,8 +25,6 @@ import TrendingCard from "@/components/TrendingMovieCard";
 import TrendingSeriesCard from "@/components/TrendingTVSeriesCard";
 import TVSeriesCard from "@/components/TVSeriesCard";
 
-
-// --- NOWOCZESNA KARTA "MORE" ---
 const MoreCard = ({ onPress }: { onPress: () => void }) => {
   return (
     <TouchableOpacity
@@ -54,7 +50,6 @@ const MoreCard = ({ onPress }: { onPress: () => void }) => {
   );
 };
 
-// --- NAGŁÓWEK SEKCJI ---
 const SectionHeader = ({ title }: { title: string }) => (
   <View className="flex-row items-center mb-4 px-4 mt-8">
     <View className="w-1 h-6 bg-secondary rounded-full mr-3" />
@@ -64,7 +59,6 @@ const SectionHeader = ({ title }: { title: string }) => (
   </View>
 );
 
-// --- SMART COMPONENT: MOVIE SECTION ---
 interface SectionProps {
   title: string;
   sortBy?: string;
@@ -78,7 +72,6 @@ const MovieSection = ({ title, sortBy }: SectionProps) => {
   );
 
   if (loading) return null; 
-
   if (error || !data || data.length === 0) return null;
 
   return (
@@ -111,7 +104,6 @@ const MovieSection = ({ title, sortBy }: SectionProps) => {
   );
 };
 
-// --- SMART COMPONENT: SERIES SECTION ---
 const SeriesSection = ({ title, sortBy }: SectionProps) => {
   const router = useRouter();
   const { data, loading, error } = useLoadData(
@@ -120,7 +112,6 @@ const SeriesSection = ({ title, sortBy }: SectionProps) => {
   );
 
   if (loading) return null;
-
   if (error || !data || data.length === 0) return null;
 
   return (
@@ -153,8 +144,6 @@ const SeriesSection = ({ title, sortBy }: SectionProps) => {
   );
 };
 
-
-// --- GŁÓWNY WIDOK ---
 const Index = () => {
   const router = useRouter();
 
@@ -178,7 +167,6 @@ const Index = () => {
     <View className="flex-1 bg-[#000C1C]">
       <StatusBar style="light" />
       
-      {/* Tło Gradientowe */}
       <LinearGradient
         colors={["#000C1C", "#13132B", "#1E1E2D"]}
         start={{ x: 0, y: 0 }}
@@ -192,7 +180,6 @@ const Index = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* --- CUSTOM HEADER --- */}
           <View className="flex-row justify-between items-center px-5 mt-2 mb-6">
             <View>
               <Text className="font-pmedium text-sm text-gray-200">Welcome Back</Text>
@@ -201,7 +188,6 @@ const Index = () => {
               </Text>
             </View>
             
-            {/* Awatar użytkownika */}
             <TouchableOpacity 
                 className="w-10 h-10 bg-white/10 rounded-full justify-center items-center border border-white/20 overflow-hidden"
                 onPress={() => router.push('/profile')}
@@ -214,7 +200,7 @@ const Index = () => {
                 />
               ) : (
                 <Image 
-                  source={icons.user || icons.user} 
+                  source={icons.user} 
                   className="w-6 h-6" 
                   resizeMode="contain" 
                   tintColor="#fff"
@@ -223,7 +209,6 @@ const Index = () => {
             </TouchableOpacity>
           </View>
 
-          {/* --- SEARCH BAR --- */}
           <View className="px-5 mb-6">
             <SearchBar
               onPress={() => router.push("/search/search")}
@@ -231,8 +216,6 @@ const Index = () => {
             />
           </View>
 
-          {/* --- SEKCJA TRENDÓW (FEATURED) --- */}
-          
           {!trendingLoading && !trendingError && (trendingMovies?.length || 0) > 0 && (
             <View className="mb-4">
               <Text className="text-gray-400 text-sm font-pregular px-5 mb-3 uppercase tracking-widest">
@@ -272,8 +255,6 @@ const Index = () => {
               />
             </View>
           )}
-
-          {/* --- SEKCJE TMDB --- */}
 
           <FlickMatchBanner />
           

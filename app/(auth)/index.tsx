@@ -1,13 +1,12 @@
 import { useGlobalContext } from "@/context/GlobalProvider";
-import { LinearGradient } from 'expo-linear-gradient'; // 1. Import
+import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { cssInterop } from "nativewind"; // 2. Import
+import { cssInterop } from "nativewind";
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// 3. Konfiguracja NativeWind dla Gradientu
 cssInterop(LinearGradient, {
   className: "style",
 });
@@ -20,18 +19,14 @@ const Welcome = () => {
   }
 
   return (
-    // 4. Główny View z fallbackiem koloru (zamiast SafeAreaView jako root)
     <View className="flex-1 bg-[#1E1E2D]">
-      
-      {/* 5. Gradient jako tło absolutne */}
       <LinearGradient
-          colors={["#000C1C", "#161622", "#1E1E2D"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          className="absolute top-0 left-0 right-0 bottom-0 h-full w-full"
+        colors={["#000C1C", "#161622", "#1E1E2D"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        className="absolute top-0 left-0 right-0 bottom-0 h-full w-full"
       />
 
-      {/* 6. Treść wewnątrz SafeAreaView */}
       <SafeAreaView className="flex-1">
         <ScrollView contentContainerStyle={{ height: '100%' }}>
           <View className="w-full justify-center items-center min-h-[85vh] px-4">
@@ -49,7 +44,6 @@ const Welcome = () => {
             </Text>
 
             <View className="w-full mt-10 space-y-4">
-              {/* Przycisk Rejestracji */}
               <TouchableOpacity
                 onPress={() => router.push('/(auth)/sign-up')}
                 className="bg-secondary rounded-xl min-h-[62px] justify-center items-center w-full"
@@ -60,7 +54,6 @@ const Welcome = () => {
                 </Text>
               </TouchableOpacity>
 
-              {/* Przycisk Logowania */}
               <TouchableOpacity
                 onPress={() => router.push('/(auth)/sign-in')}
                 className="bg-yellow-500 border-2 border-black-200 rounded-xl min-h-[62px] justify-center items-center w-full mt-4"

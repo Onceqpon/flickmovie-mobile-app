@@ -1,4 +1,3 @@
-import MovieCard from "@/components/MovieCard";
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
@@ -6,6 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import MovieCard from "@/components/MovieCard";
 import { useGlobalContext } from "@/context/GlobalProvider";
 import { saveGameToHistory } from "@/services/appwriteapi";
 
@@ -43,16 +43,14 @@ export default function GameResults() {
 
   return (
     <View className="flex-1 bg-primary">
-        {/* TŁO GRADIENTOWE */}
         <LinearGradient
-                colors={["#000C1C", "#161622", "#1E1E2D"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                className="absolute w-full h-full"
-              />
+            colors={["#000C1C", "#161622", "#1E1E2D"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            className="absolute w-full h-full"
+        />
 
         <SafeAreaView className="flex-1">
-        {/* --- HEADER --- */}
         <View className="px-6 pt-4 pb-2">
             <Text className="text-gray-400 text-sm font-medium uppercase tracking-widest text-center">
             Session Summary
@@ -71,10 +69,8 @@ export default function GameResults() {
             )}
         </View>
 
-        {/* --- MAIN CONTENT --- */}
         <View className="flex-1 px-4 mt-4">
             {results.length === 0 ? (
-            // EMPTY STATE
             <View className="flex-1 justify-center items-center opacity-80">
                 <View className="bg-black-100 p-8 rounded-full mb-6 border-2 border-dashed border-gray-700">
                 <Feather name="frown" size={64} color="#666" />
@@ -100,7 +96,6 @@ export default function GameResults() {
                 </TouchableOpacity>
             </View>
             ) : (
-            // RESULTS LIST
             <FlatList
                 data={results}
                 numColumns={2}
@@ -110,7 +105,6 @@ export default function GameResults() {
                 columnWrapperStyle={{ gap: 12, justifyContent: 'space-between' }}
                 renderItem={({ item }) => (
                 <View className="w-[48%] mb-4">
-                    {/* ZMIANA: Usunięto wrapper View z tłem (bg-black-100) i zaokrągleniem (rounded-xl) */}
                     <MovieCard {...item} />
                 </View>
                 )}
@@ -118,9 +112,7 @@ export default function GameResults() {
             )}
         </View>
 
-        {/* --- BOTTOM NAVIGATION BAR --- */}
         <View className="absolute bottom-0 left-0 right-0 p-6 pt-4"> 
-            {/* Gradient pod przyciskiem dla lepszej czytelności */}
             <LinearGradient
                 colors={['transparent', '#161622']}
                 className="absolute inset-0"

@@ -1,3 +1,6 @@
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, TouchableOpacity } from 'react-native';
+
 import { icons } from '@/constants/icons';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import {
@@ -8,8 +11,6 @@ import {
   removeFromWatchlist,
   removeFromWatchlistSeries
 } from '@/services/appwriteapi';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, TouchableOpacity } from 'react-native';
 
 interface WatchlistButtonProps {
   item: {
@@ -91,7 +92,6 @@ const WatchlistButton = ({ item, type }: WatchlistButtonProps) => {
       }
     } catch (error) {
       setIsSaved(previousState);
-      console.error(error);
       Alert.alert("Error", "Could not update watchlist");
     }
   };
@@ -104,7 +104,7 @@ const WatchlistButton = ({ item, type }: WatchlistButtonProps) => {
         source={icons.save}
         className="w-6 h-6"
         resizeMode="contain"
-        style={{ tintColor: isSaved ? '#FF9C01' : '#000000' }} 
+        tintColor={isSaved ? '#FF9C01' : '#FFFFFF'}
       />
     </TouchableOpacity>
   );

@@ -6,7 +6,7 @@ export default function GameLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen 
         name="setup" 
-        options={{ presentation: 'modal' }} // Tylko unikalna opcja
+        options={{ presentation: 'modal' }}
       />
       <Stack.Screen name="play" />
       <Stack.Screen name="results" />

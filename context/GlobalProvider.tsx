@@ -1,8 +1,8 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { Models } from "react-native-appwrite";
-import { getCurrentUser } from "../services/appwriteapi";
 
-// Definicja typów dla naszego kontekstu
+import { getCurrentUser } from "@/services/appwriteapi";
+
 interface GlobalContextType {
   isLogged: boolean;
   setIsLogged: React.Dispatch<React.SetStateAction<boolean>>;
@@ -11,7 +11,6 @@ interface GlobalContextType {
   loading: boolean;
 }
 
-// Inicjalizacja z domyślną wartością (null, ale zrzutowane, by uniknąć ciągłego sprawdzania null w komponentach)
 const GlobalContext = createContext<GlobalContextType | null>(null);
 
 export const useGlobalContext = () => {
@@ -41,7 +40,7 @@ const GlobalProvider = ({ children }: GlobalProviderProps) => {
         }
       })
       .catch((error) => {
-        console.log(error);
+        console.error(error);
       })
       .finally(() => {
         setLoading(false);

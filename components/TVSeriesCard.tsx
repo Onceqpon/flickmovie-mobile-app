@@ -29,14 +29,13 @@ const TVSeriesCard = ({
       onPress();
       return;
     }
-    // ZMIANA: Ścieżka prowadzi teraz do folderu "tvseries"
-    // Upewnij się, że utworzysz plik app/tvseries/[id].tsx
     router.push(`/tvseries/${id}`);
   };
 
   return (
     <TouchableOpacity 
         onPress={handlePress} 
+        activeOpacity={0.7}
         className={`rounded-lg ${className || ""}`}
     >
       <Image
@@ -56,11 +55,12 @@ const TVSeriesCard = ({
       <View className="flex-row items-center justify-start gap-x-1">
         <Image 
           source={icons.star} 
-          className="size-4" 
+          className="w-4 h-4" 
           tintColor="#FFD700"
+          resizeMode="contain"
         />
         <Text className="text-xs text-white font-bold uppercase">
-          {(vote_average).toFixed(1)}
+          {vote_average ? vote_average.toFixed(1) : "N/A"}
         </Text>
       </View>
 

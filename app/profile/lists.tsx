@@ -1,17 +1,14 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { cssInterop } from "nativewind";
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// 1. Importy LinearGradient i cssInterop
-import { LinearGradient } from 'expo-linear-gradient';
-import { cssInterop } from "nativewind";
+import { icons } from '@/constants/icons';
+import { useGlobalContext } from '@/context/GlobalProvider';
+import { createList, deleteList, getUserLists, updateList } from '@/services/appwriteapi';
 
-import { icons } from '../../constants/icons';
-import { useGlobalContext } from '../../context/GlobalProvider';
-import { createList, deleteList, getUserLists, updateList } from '../../services/appwriteapi';
-
-// 2. Konfiguracja cssInterop dla NativeWind
 cssInterop(LinearGradient, {
   className: "style",
 });
@@ -21,11 +18,9 @@ const Lists = () => {
   const [lists, setLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Form State
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   
-  // UI State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingList, setEditingList] = useState<any | null>(null);
@@ -62,11 +57,9 @@ const Lists = () => {
     setIsSubmitting(true);
     try {
       if (editingList) {
-        // UPDATE MODE
         await updateList(editingList.$id, name, description);
         Alert.alert('Success', 'List updated successfully');
       } else {
-        // CREATE MODE
         await createList(user.$id, name, description);
         Alert.alert('Success', 'New list created');
       }
@@ -119,14 +112,13 @@ const Lists = () => {
 
   const renderHeader = () => (
     <View className="px-4 my-6">
-      {/* Header with Back Button */}
       <View className="flex-row items-center mb-8">
         <TouchableOpacity 
           onPress={() => router.back()} 
           className="bg-black-100 p-2 rounded-full mr-4 border border-black-200"
         >
            <Image 
-             source={icons.left_arrow || icons.angle_left} 
+             source={icons.left_arrow} 
              className="w-5 h-5" 
              tintColor="white" 
              resizeMode="contain" 
@@ -135,7 +127,6 @@ const Lists = () => {
         <Text className="text-2xl text-white font-psemibold">My Lists</Text>
       </View>
 
-      {/* Create / Edit Form Toggle */}
       {!showForm ? (
         <TouchableOpacity 
           onPress={() => {
@@ -207,16 +198,12 @@ const Lists = () => {
   );
 
   return (
-    // ZMIANA 1: Główny kontener to View z fallbackiem koloru
     <View className="flex-1 bg-[#1E1E2D]">
-      
-      {/* ZMIANA 2: Gradient poza SafeAreaView */}
       <LinearGradient
           colors={["#000C1C", "#161622", "#1E1E2D"]}
           className="absolute w-full h-full"
         />
 
-      {/* ZMIANA 3: SafeAreaView wewnątrz */}
       <SafeAreaView className="flex-1">
         <FlatList
           data={lists}
@@ -224,7 +211,6 @@ const Lists = () => {
           ListHeaderComponent={renderHeader()} 
           contentContainerStyle={{ paddingBottom: 100 }}
           renderItem={({ item }) => (
-            // Zmiana stylu karty na modern (bg-black-100, border)
             <View className="bg-black-100 mx-4 mb-4 p-5 rounded-2xl border border-black-200 shadow-sm bg-white/10">
               <TouchableOpacity 
                 className="mb-4"

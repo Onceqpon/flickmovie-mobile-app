@@ -4,10 +4,19 @@ import { Image, Text, TouchableOpacity, View } from "react-native";
 
 import { images } from "@/constants/images";
 
+interface TrendingMovieCardProps {
+  movie: {
+    movie_id: number;
+    title: string;
+    poster_url: string;
+  };
+  index: number;
+}
+
 const TrendingMovieCard = ({
   movie: { movie_id, title, poster_url },
   index,
-}: TrendingCardProps) => {
+}: TrendingMovieCardProps) => {
   return (
     <Link href={`/movies/${movie_id}`} asChild>
       <TouchableOpacity className="w-32 relative pl-5">
@@ -25,7 +34,7 @@ const TrendingMovieCard = ({
           >
             <Image
               source={images.btbackground}
-              className="size-14"
+              className="w-14 h-14"
               resizeMode="cover"
             />
           </MaskedView>

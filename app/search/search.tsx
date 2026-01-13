@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar"; // Dodano dla białego paska statusu
+import { StatusBar } from "expo-status-bar";
 import { cssInterop } from "nativewind";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -15,17 +15,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import MovieDisplayCard from "@/components/MovieCard";
+import SearchBar from "@/components/SearchBar";
+import TVSeriesCard from "@/components/TVSeriesCard";
 import { icons } from "@/constants/icons";
-
 import { updateSearchCount, updateSeriesSearchCount } from "@/services/appwriteapi";
 import { fetchMovies, fetchTVSeries } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
 
-import MovieDisplayCard from "@/components/MovieCard";
-import SearchBar from "@/components/SearchBar";
-import TVSeriesCard from "@/components/TVSeriesCard";
-
-// Konfiguracja stylów dla Gradientu
 cssInterop(LinearGradient, {
   className: "style",
 });
@@ -34,7 +31,6 @@ const Search = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   
-  // --- POBIERANIE DANYCH ---
   const {
     data: movies = [],
     loading: moviesLoading,
@@ -59,12 +55,10 @@ const Search = () => {
     false
   );
 
-  // --- OBSŁUGA INPUTU ---
   const handleSearch = useCallback((text: string) => {
     setSearchQuery(text);
   }, []);
 
-  // Debounce (opóźnienie wyszukiwania)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchQuery.trim()) {
@@ -79,9 +73,8 @@ const Search = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  // --- BEZPIECZNE COFANIE ---
   const handleBack = useCallback(() => {
-    Keyboard.dismiss(); // Schowaj klawiaturę
+    Keyboard.dismiss();
     if (router.canGoBack()) {
       router.back();
     } else {
@@ -89,9 +82,6 @@ const Search = () => {
     }
   }, [router]);
 
-  // --- OBSŁUGA KLIKNIĘCIA (TYLKO STATYSTYKI) ---
-  // Uwaga: Zakładamy, że MovieCard i TVSeriesCard mają w sobie router.push
-  
   const handleMoviePress = (item: any) => {
     updateSearchCount(searchQuery, item).catch(err => 
         console.error("Error updating movie count:", err)
@@ -110,11 +100,9 @@ const Search = () => {
   const hasSeries = Array.isArray(series) && series.length > 0;
 
   return (
-    // Główny kontener - kolor tła zgodny z górą gradientu
     <View className="flex-1 bg-[#000C1C]">
       <StatusBar style="light" />
       
-      {/* GLOBALNE TŁO GRADIENTOWE */}
       <LinearGradient
           colors={["#000C1C", "#161622", "#1E1E2D"]}
           start={{ x: 0, y: 0 }}
@@ -130,7 +118,6 @@ const Search = () => {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          {/* HEADER */}
           <View className="flex-row items-center justify-between mt-4 mb-2">
             <TouchableOpacity 
               onPress={handleBack}
@@ -147,14 +134,12 @@ const Search = () => {
             </TouchableOpacity>
           </View>
 
-          {/* LOGO */}
           <View className="mb-8">
             <Text className="text-4xl text-white font-black text-center tracking-wider">
               FLICK<Text className="text-secondary">MOVIE</Text>
             </Text>
           </View>
 
-          {/* SEARCH BAR */}
           <View className="mb-5">
             <SearchBar
               placeholder="Search for movies or TV series"
@@ -164,7 +149,6 @@ const Search = () => {
             />
           </View>
 
-          {/* LOADING */}
           {isLoading && (
             <ActivityIndicator
               size="large"
@@ -173,14 +157,12 @@ const Search = () => {
             />
           )}
 
-          {/* ERROR */}
           {error && (
             <Text className="text-red-500 px-5 my-3 text-center">
               Error: {error.message}
             </Text>
           )}
 
-          {/* NO RESULTS */}
           {!isLoading && !hasMovies && !hasSeries && searchQuery.trim() !== "" && (
              <View className="mt-10 px-5">
                 <Text className="text-center text-gray-500">
@@ -189,7 +171,6 @@ const Search = () => {
              </View>
           )}
 
-          {/* EMPTY STATE (START) */}
           {!isLoading && searchQuery.trim() === "" && (
                <View className="mt-10 px-5">
                <Text className="text-center text-gray-500">
@@ -198,7 +179,6 @@ const Search = () => {
              </View>
           )}
 
-          {/* --- MOVIES LIST --- */}
           {!isLoading && hasMovies && (
             <View className="mb-8">
               <Text className="text-xl text-white font-bold mb-4">
@@ -226,7 +206,6 @@ const Search = () => {
             </View>
           )}
 
-          {/* --- SERIES LIST --- */}
           {!isLoading && hasSeries && (
             <View>
               <Text className="text-xl text-white font-bold mb-4">

@@ -1,6 +1,6 @@
-import { LinearGradient } from 'expo-linear-gradient'; // 1. Import
+import { LinearGradient } from 'expo-linear-gradient';
 import { Link, router } from 'expo-router';
-import { cssInterop } from "nativewind"; // 2. Import
+import { cssInterop } from "nativewind";
 import { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import { getCurrentUser, signIn } from '@/services/appwriteapi';
 
-// 3. Konfiguracja NativeWind
 cssInterop(LinearGradient, {
   className: "style",
 });
@@ -39,7 +38,7 @@ const SignIn = () => {
         Alert.alert('Error', 'Failed to fetch user data');
       }
 
-    } catch (error: any) {
+    } catch (error) {
       Alert.alert('Error', error.message || 'An unknown error occurred');
     } finally {
       setIsSubmitting(false);
@@ -47,15 +46,12 @@ const SignIn = () => {
   };
 
   return (
-    // 4. Główny kontener View z fallbackiem koloru
     <View className="flex-1 bg-[#1E1E2D]">
-      
-      {/* 5. Gradient Tła */}
       <LinearGradient
-          colors={["#000C1C", "#161622", "#1E1E2D"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          className="absolute top-0 left-0 right-0 bottom-0 h-full w-full"
+        colors={["#000C1C", "#161622", "#1E1E2D"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        className="absolute top-0 left-0 right-0 bottom-0 h-full w-full"
       />
 
       <SafeAreaView className="flex-1">
@@ -63,8 +59,8 @@ const SignIn = () => {
           <View className="w-full justify-center min-h-[85vh] px-4 my-6">
             <View className="w-full justify-center items-center">
               <Text className="text-5xl text-white font-black text-center tracking-wider mt-20 mb-5 ">
-                  FLICK<Text className="text-secondary">MOVIE</Text>
-               </Text>
+                FLICK<Text className="text-secondary">MOVIE</Text>
+              </Text>
             </View>
 
             <Text className="text-2xl text-white font-semibold mt-10 font-psemibold">
@@ -87,7 +83,7 @@ const SignIn = () => {
 
             <View className="space-y-2 mt-7">
               <Text className="text-base text-gray-100 font-pmedium">Password</Text>
-              <View className="w-full h-16 px-4 bg-black-100 border-2  rounded-2xl border-secondary items-center flex-row">
+              <View className="w-full h-16 px-4 bg-black-100 border-2 rounded-2xl border-secondary items-center flex-row">
                 <TextInput
                   className="flex-1 text-white font-psemibold text-base"
                   value={form.password}

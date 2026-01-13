@@ -1,15 +1,13 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { cssInterop } from "nativewind";
 import React, { useState } from 'react';
 import { Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// 1. Dodano importy dla Gradientu i NativeWind
-import { LinearGradient } from 'expo-linear-gradient';
-import { cssInterop } from "nativewind";
 
 import { icons } from '@/constants/icons';
 import { updateUserPassword } from '@/services/appwriteapi';
 
-// 2. Konfiguracja cssInterop dla LinearGradient
 cssInterop(LinearGradient, {
   className: "style",
 });
@@ -52,10 +50,7 @@ const ChangePassword = () => {
   };
 
   return (
-    // 3. Usunięto 'bg-primary' z SafeAreaView
     <SafeAreaView className="h-full">
-      
-      {/* 4. Dodano LinearGradient jako tło */}
       <LinearGradient
           colors={["#000C1C", "#161622", "#1E1E2D"]}
           className="absolute w-full h-full"

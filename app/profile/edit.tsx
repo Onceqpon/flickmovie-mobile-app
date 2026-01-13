@@ -1,18 +1,15 @@
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { cssInterop } from "nativewind";
 import React, { useState } from 'react';
 import { Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// 1. Importy dla Gradientu i NativeWind
-import { LinearGradient } from 'expo-linear-gradient';
-import { cssInterop } from "nativewind";
 
 import { icons } from '@/constants/icons';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import { deleteFile, updateUserAvatar, updateUserName, uploadFile } from '@/services/appwriteapi';
 
-// 2. Konfiguracja stylów
 cssInterop(LinearGradient, {
   className: "style",
 });
@@ -97,10 +94,7 @@ const EditProfile = () => {
   };
 
   return (
-    // 3. Usunięto 'bg-primary'
     <SafeAreaView className="h-full">
-      
-      {/* 4. Dodano Gradient */}
       <LinearGradient
           colors={["#000C1C", "#161622", "#1E1E2D"]}
           className="absolute w-full h-full"

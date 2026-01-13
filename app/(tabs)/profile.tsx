@@ -1,10 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
+import { cssInterop } from "nativewind";
 import React, { useCallback, useState } from 'react';
 import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// 1. Import i konfiguracja cssInterop (dla pewności)
 import { icons } from '@/constants/icons';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import {
@@ -14,13 +14,11 @@ import {
   getWatchlistSeriesCount,
   signOut
 } from '@/services/appwriteapi';
-import { cssInterop } from "nativewind";
 
 cssInterop(LinearGradient, {
   className: "style",
 });
 
-// --- KOMPONENT STATYSTYKI ---
 const StatItem = ({ value, label }: { value: string | number; label: string }) => (
   <View className="items-center flex-1">
     <Text className="text-2xl font-black text-white">{value}</Text>
@@ -28,7 +26,6 @@ const StatItem = ({ value, label }: { value: string | number; label: string }) =
   </View>
 );
 
-// --- KOMPONENT MENU ---
 const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, title: string, onPress: () => void, isDestructive?: boolean }) => (
   <TouchableOpacity 
     onPress={onPress}
@@ -37,10 +34,10 @@ const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, 
   >
     <View className={`p-2 rounded-full mr-4 ${isDestructive ? 'bg-red-500/20' : 'bg-white/10'}`}>
         <Image 
-        source={icon} 
-        className="w-5 h-5" 
-        resizeMode="contain" 
-        style={{ tintColor: isDestructive ? '#ef4444' : '#FFA001' }} 
+          source={icon} 
+          className="w-5 h-5" 
+          resizeMode="contain" 
+          style={{ tintColor: isDestructive ? '#ef4444' : '#FFA001' }} 
         />
     </View>
     
@@ -50,7 +47,7 @@ const MenuItem = ({ icon, title, onPress, isDestructive = false }: { icon: any, 
     
     {!isDestructive && (
       <View className="bg-white/10 p-1.5 rounded-full">
-         <Image source={icons.left_arrow || icons.angle_left} className="w-3 h-3 rotate-180" style={{ tintColor: '#9CA3AF' }} />
+         <Image source={icons.left_arrow} className="w-3 h-3 rotate-180" style={{ tintColor: '#9CA3AF' }} />
       </View>
     )}
   </TouchableOpacity>
@@ -129,7 +126,6 @@ const Profile = () => {
   const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
 
   return (
-    // STRUKTURA NAPRAWIONA (Gradient pod SafeAreaView)
     <View className="flex-1 bg-[#1E1E2D]">
       <LinearGradient
         colors={["#000C1C", "#161622", "#1E1E2D"]}
@@ -141,26 +137,24 @@ const Profile = () => {
       <SafeAreaView className="flex-1">
         <ScrollView className="px-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
             
-          {/* --- NAGŁÓWEK PROFILU --- */}
           <View className="items-center mt-6 mb-8">
             <View className="relative">
                 <View className="w-28 h-28 rounded-full border-4 border-secondary/20 justify-center items-center bg-white/5 overflow-hidden shadow-xl">
                     {userAvatar ? (
                         <Image 
-                        source={{ uri: userAvatar }} 
-                        className="w-full h-full" 
-                        resizeMode="cover" 
+                          source={{ uri: userAvatar }} 
+                          className="w-full h-full" 
+                          resizeMode="cover" 
                         />
                     ) : (
                         <Image 
-                        source={icons.user} 
-                        className="w-12 h-12" 
-                        resizeMode="contain" 
-                        style={{ tintColor: '#fff' }}
+                          source={icons.user} 
+                          className="w-12 h-12" 
+                          resizeMode="contain" 
+                          style={{ tintColor: '#fff' }}
                         />
                     )}
                 </View>
-                {/* Ikona edycji */}
                 <TouchableOpacity 
                     onPress={() => router.push('/profile/edit')}
                     className="absolute bottom-0 right-0 bg-secondary p-2 rounded-full border-4 border-[#161622]"
@@ -175,7 +169,6 @@ const Profile = () => {
             <Text className="text-gray-400 text-sm font-medium">{user.email}</Text>
           </View>
 
-          {/* --- PASEK STATYSTYK --- */}
           <View className="flex-row justify-around bg-white/5 py-5 rounded-3xl mb-10 border border-white/10 backdrop-blur-md">
             <StatItem value={watchlistCount} label="Watchlist" />
             <View className="w-[1px] h-full bg-white/10" />
@@ -184,7 +177,6 @@ const Profile = () => {
             <StatItem value={reviewsCount} label="Reviews" />
           </View>
 
-          {/* --- LIBRARY SECTION --- */}
           <View className="mb-8">
             <Text className="text-secondary font-black mb-4 uppercase text-sm tracking-widest ml-2 opacity-80">
                 My Library
@@ -201,21 +193,17 @@ const Profile = () => {
                 onPress={() => router.push('/profile/ratings')} 
             />
             <MenuItem 
-                icon={icons.playlist || icons.playlist} 
+                icon={icons.playlist} 
                 title="Custom Lists" 
                 onPress={() => router.push('/profile/lists')} 
             />
-            
-            {/* NOWY PRZYCISK: GAME HISTORY */}
             <MenuItem 
-                // Użyj icons.play jeśli masz, lub innej ikony np. icons.menu
-                icon={icons.play || icons.play} 
+                icon={icons.play} 
                 title="Game History" 
                 onPress={() => router.push('/profile/game-history' as any)} 
             />
           </View>
 
-          {/* --- APP SECTION --- */}
           <View className="mb-8">
             <Text className="text-secondary font-black mb-4 uppercase text-sm tracking-widest ml-2 opacity-80">
                 Settings
@@ -233,10 +221,9 @@ const Profile = () => {
             />
           </View>
 
-          {/* --- LOGOUT --- */}
           <View className="mt-2 mb-10">
             <MenuItem 
-                icon={icons.user || icons.user} 
+                icon={icons.user} 
                 title="Log Out" 
                 onPress={logout}
                 isDestructive={true}

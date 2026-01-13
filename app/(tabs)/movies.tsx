@@ -12,17 +12,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { icons } from "@/constants/icons";
-import { fetchMovies } from "@/services/tmdbapi";
-import useLoadData from "@/services/useloaddata";
-// 1. IMPORT KONTEKSTU
-import { useGlobalContext } from "@/context/GlobalProvider";
-
 import FlickMatchBanner from "@/components/FlickMatchBanner";
 import MovieCard from "@/components/MovieCard";
 import SearchBar from "@/components/SearchBar";
+import { icons } from "@/constants/icons";
+import { useGlobalContext } from "@/context/GlobalProvider";
+import { fetchMovies } from "@/services/tmdbapi";
+import useLoadData from "@/services/useloaddata";
 
-// --- KOMPONENT KARTY "MORE" ---
 const MoreCard = ({ onPress }: { onPress: () => void }) => {
   return (
     <TouchableOpacity
@@ -48,7 +45,6 @@ const MoreCard = ({ onPress }: { onPress: () => void }) => {
   );
 };
 
-// --- NAGŁÓWEK SEKCJI ---
 const SectionHeader = ({ title }: { title: string }) => (
   <View className="flex-row items-center mb-4 px-4 mt-6">
     <View className="w-1 h-6 bg-secondary rounded-full mr-3" />
@@ -58,7 +54,6 @@ const SectionHeader = ({ title }: { title: string }) => (
   </View>
 );
 
-// --- DANE GATUNKÓW ---
 const genres = [
   { id: 28, name: "Action" },
   { id: 12, name: "Adventure" },
@@ -81,7 +76,6 @@ const genres = [
   { id: 37, name: "Western" },
 ];
 
-// --- SEKCJA GATUNKU ---
 const GenreSection = ({ genre }: { genre: { id: number; name: string } }) => {
   const router = useRouter();
   
@@ -130,11 +124,8 @@ const GenreSection = ({ genre }: { genre: { id: number; name: string } }) => {
   );
 };
 
-// --- GŁÓWNY WIDOK ---
 const Movies = () => {
   const router = useRouter();
-
-  // 2. POBIERANIE DANYCH UŻYTKOWNIKA
   const { user } = useGlobalContext();
   const rawAvatar = (user?.prefs as any)?.avatar;
   const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
@@ -143,7 +134,6 @@ const Movies = () => {
     <View className="flex-1 bg-[#000C1C]">
       <StatusBar style="light" />
       
-      {/* TŁO GRADIENTOWE */}
       <LinearGradient
         colors={["#000C1C", "#13132B", "#1E1E2D"]}
         start={{ x: 0, y: 0 }}
@@ -157,7 +147,6 @@ const Movies = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* --- CUSTOM HEADER --- */}
           <View className="flex-row justify-between items-center px-5 mt-2 mb-6">
             <View>
               <Text className="font-pmedium text-sm text-gray-200">Browse by Genre</Text>
@@ -166,7 +155,6 @@ const Movies = () => {
               </Text>
             </View>
             
-            {/* 3. LOGIKA AWATARA */}
             <TouchableOpacity 
                 className="w-10 h-10 bg-white/10 rounded-full justify-center items-center border border-white/20 overflow-hidden"
                 onPress={() => router.push('/profile')}
@@ -188,7 +176,6 @@ const Movies = () => {
             </TouchableOpacity>
           </View>
 
-          {/* --- SEARCH BAR --- */}
           <View className="px-5 mb-4">
             <SearchBar
               onPress={() => {
@@ -200,7 +187,6 @@ const Movies = () => {
 
         <FlickMatchBanner />
 
-          {/* --- LISTA GATUNKÓW --- */}
           <View className="mt-2">
             {genres.map((genre) => (
               <GenreSection key={genre.name} genre={genre} />

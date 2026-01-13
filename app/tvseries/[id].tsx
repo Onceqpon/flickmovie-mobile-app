@@ -15,19 +15,16 @@ import Reviews from "@/components/Reviews";
 import SaveToListModal from "@/components/SaveToListModal";
 import WatchlistButton from "@/components/WatchlistButton";
 import { icons } from "@/constants/icons";
+import { useGlobalContext } from "@/context/GlobalProvider";
 import { fetchSeasonDetails, fetchTVSeriesDetails } from "@/services/tmdbapi";
 import useLoadData from "@/services/useloaddata";
-// 1. IMPORTUJEMY KONTEKST
-import { useGlobalContext } from "@/context/GlobalProvider";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-// Konfiguracja nativewind dla gradientu
 cssInterop(LinearGradient, {
   className: "style",
 });
 
-// Komponent do wyświetlania pojedynczej informacji
 interface SeriesInfoProps {
   label: string;
   value?: string | number | null;
@@ -45,26 +42,22 @@ const SeriesInfo = ({ label, value }: SeriesInfoProps) => (
 const Details = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  // 2. POBIERAMY STATUS LOGOWANIA
   const { isLogged } = useGlobalContext();
 
   const seriesId = Array.isArray(id) ? id[0] : (id as string | undefined);
   const shouldFetch = !!seriesId;
 
-  // --- STATE ---
   const [modalVisible, setModalVisible] = useState(false);
   const [expandedSeasonId, setExpandedSeasonId] = useState<number | null>(null);
   const [episodes, setEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
 
-  // Pobieranie danych serialu
   const { data: series, loading, error } = useLoadData(
     () => fetchTVSeriesDetails(seriesId!),
     [seriesId],
     shouldFetch
   );
 
-  // Obsługa kliknięcia w sezon
   const handleSeasonPress = async (seasonNumber: number, seasonId: number) => {
     if (!seriesId) return;
 
@@ -93,7 +86,6 @@ const Details = () => {
 
   if (!seriesId) return null;
 
-  // Loading State z Gradientem
   if (loading)
     return (
       <View className="flex-1 justify-center items-center">
@@ -107,7 +99,6 @@ const Details = () => {
       </View>
     );
 
-  // Error State z Gradientem
   if (error || !series) {
     return (
       <View className="flex-1 justify-center items-center">
@@ -128,10 +119,7 @@ const Details = () => {
   }
 
   return (
-    // GLÓWNY WIDOK
     <View className="flex-1">
-      
-      {/* 1. GŁÓWNE TŁO APLIKACJI (Fixed Gradient) */}
       <LinearGradient
         colors={["#000C1C", "#161622", "#1E1E2D"]}
         start={{ x: 0, y: 0 }}
@@ -143,7 +131,6 @@ const Details = () => {
         contentContainerStyle={{ paddingBottom: 100 }} 
         showsVerticalScrollIndicator={false}
       >
-        {/* --- HEADER: PLAKAT + GRADIENT --- */}
         <View className="relative w-full h-[550px]">
           <Image
             source={{
@@ -153,16 +140,14 @@ const Details = () => {
             resizeMode="cover"
           />
           
-          {/* 2. GRADIENT POD PLAKATEM (Fade to match background) */}
           <LinearGradient
             colors={["transparent", "#161622"]} 
             style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 350 }}
           />
 
-          {/* 3. WARUNEK DLA PRZYCISKÓW (Tylko dla zalogowanych) */}
           {isLogged && (
              <View className="absolute bottom-10 right-5 flex-row gap-4 z-10">
-                 <View className="rounded-full size-14 bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10">
+                 <View className="rounded-full w-14 h-14 bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10">
                     <WatchlistButton 
                       item={{
                         id: series.id,
@@ -176,12 +161,12 @@ const Details = () => {
 
                  <TouchableOpacity 
                     onPress={() => setModalVisible(true)}
-                    className="rounded-full size-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
+                    className="rounded-full w-14 h-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
                     activeOpacity={0.8}
                  >
                     <Image 
                       source={icons.plus} 
-                      className="size-7" 
+                      className="w-7 h-7" 
                       resizeMode="contain" 
                       tintColor="#161622" 
                     />
@@ -190,13 +175,11 @@ const Details = () => {
           )}
         </View>
 
-        {/* --- TREŚĆ --- */}
         <View className="px-5 -mt-6">
           <Text className="text-white font-black text-3xl mb-2 leading-tight">
             {series.name}
           </Text>
 
-          {/* Meta Info */}
           <View className="flex-row items-center flex-wrap gap-3 mb-5">
             <Text className="text-gray-300 font-medium">
               {series.first_air_date?.split("-")[0]}
@@ -207,12 +190,11 @@ const Details = () => {
             </Text>
             <View className="w-1 h-1 bg-gray-500 rounded-full" />
             <View className="flex-row items-center gap-1 bg-white/10 px-2 py-0.5 rounded text-xs">
-               <Image source={icons.star} className="size-3.5" tintColor="#FF9C01" />
+               <Image source={icons.star} className="w-3.5 h-3.5" tintColor="#FF9C01" />
                <Text className="text-secondary font-bold">{series.vote_average?.toFixed(1)}</Text>
             </View>
           </View>
 
-          {/* Gatunki */}
           <View className="flex-row flex-wrap gap-2 mb-6">
             {series.genres?.map((g) => (
               <View key={g.id} className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
@@ -221,13 +203,11 @@ const Details = () => {
             ))}
           </View>
 
-          {/* Opis */}
           <Text className="text-white font-bold text-lg mb-2">Overview</Text>
           <Text className="text-gray-300 text-base leading-6 mb-6">
             {series.overview}
           </Text>
 
-          {/* Info Grid */}
           <View className="flex-row justify-between bg-white/5 p-4 rounded-2xl mb-8 border border-white/10">
              <View className="flex-1 mr-2">
                 <SeriesInfo label="Episodes" value={series.number_of_episodes} />
@@ -242,7 +222,6 @@ const Details = () => {
              </View>
           </View>
 
-          {/* --- SEZONY --- */}
           <Text className="text-white font-bold text-xl mb-4">Seasons</Text>
           <View className="gap-y-4 mb-8">
             {series.seasons && series.seasons.length > 0 ? (
@@ -288,7 +267,6 @@ const Details = () => {
                     </View>
                   </TouchableOpacity>
 
-                  {/* Accordion Episodes */}
                   {expandedSeasonId === season.id && (
                     <View className="bg-black/20 p-2 border-t border-white/10">
                       {episodesLoading ? (
@@ -316,7 +294,7 @@ const Details = () => {
                                 <Text className="text-gray-500 text-xs">{ep.air_date}</Text>
                                 {ep.vote_average > 0 && (
                                   <View className="flex-row items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded">
-                                     <Image source={icons.star} className="size-2.5" tintColor="#FF9C01" />
+                                     <Image source={icons.star} className="w-2.5 h-2.5" tintColor="#FF9C01" />
                                      <Text className="text-gray-300 text-[10px] font-bold">{ep.vote_average.toFixed(1)}</Text>
                                   </View>
                                 )}
@@ -343,20 +321,18 @@ const Details = () => {
         <Reviews seriesId={Number(id)} title={series.name} posterPath={series.poster_path || ""} />
       </ScrollView>
 
-      {/* BACK BUTTON */}
       <TouchableOpacity
         className="absolute top-14 left-5 bg-black/40 backdrop-blur-md rounded-full p-2.5 z-50 border border-white/10"
         onPress={router.back}
       >
         <Image
           source={icons.angle_left}
-          className="size-6"
+          className="w-6 h-6"
           resizeMode="contain"
           tintColor="#FFFFFF"
         />
       </TouchableOpacity>
 
-      {/* MODAL (Pokaż tylko dla zalogowanych) */}
       {isLogged && (
           <SaveToListModal 
             visible={modalVisible}

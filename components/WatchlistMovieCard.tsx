@@ -1,5 +1,6 @@
-import { icons } from "@/constants/icons";
 import { Image, Text, TouchableOpacity, View } from "react-native";
+
+import { icons } from "@/constants/icons";
 
 interface MovieCardProps {
   id: number;
@@ -20,12 +21,9 @@ const WatchlistMovieCard = ({
   onPress,
   className,
 }: MovieCardProps) => {
-  // USUNIĘTO: const router = useRouter(); 
-  // USUNIĘTO: const handlePress...
-
   return (
     <TouchableOpacity 
-      onPress={onPress} // <--- Teraz karta jest "głupia" i robi tylko to, co każe Watchlist.tsx
+      onPress={onPress} 
       activeOpacity={0.7}
       className={`rounded-lg w-[30%] ${className || ""}`} 
     >
@@ -46,12 +44,10 @@ const WatchlistMovieCard = ({
       <View className="flex-row items-center justify-start gap-x-1">
         <Image 
           source={icons.star} 
-          className="size-4" 
+          className="w-4 h-4" 
           tintColor="#FF9C01" 
         />
         <Text className="text-xs text-white font-bold uppercase">
-          {/* Zakładam, że chcesz tu dzielić przez 2 tak jak w oryginale, 
-              choć standardowo TMDB daje skalę 1-10 */}
           {(vote_average / 2).toFixed(1)}
         </Text>
       </View>

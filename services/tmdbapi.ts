@@ -19,12 +19,12 @@ export const fetchMovies = async ({
   query,
   genreId,
   sortBy,
-  page = 1, // DODANO: Domyślna strona 1
+  page = 1,
 }: {
   query?: string;
   genreId?: number | string | null;
   sortBy?: string;
-  page?: number; // DODANO: Typ parametru
+  page?: number;
 }): Promise<Movie[]> => {
   let endpoint;
 
@@ -32,10 +32,8 @@ export const fetchMovies = async ({
     endpoint = `${TMDB_CONFIG.BASE_URL}/search/movie?query=${encodeURIComponent(query)}&page=${page}`;
     endpoint += "&vote_count.gte=1";
   } else if (genreId) {
-    // DODANO: &page=${page}
     endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=popularity.desc&with_genres=${genreId}&page=${page}`;
   } else if (sortBy) {
-    // DODANO: &page=${page}
     endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=${sortBy}&page=${page}`;
     endpoint += "&vote_count.gte=200";
   } else {
@@ -43,7 +41,6 @@ export const fetchMovies = async ({
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     const dateString = oneYearAgo.toISOString().split("T")[0];
 
-    // DODANO: &page=${page}
     endpoint = `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=vote_average.desc&primary_release_date.gte=${dateString}&vote_count.gte=200&page=${page}`;
   }
 
@@ -75,24 +72,20 @@ export const fetchMovies = async ({
 export const fetchMovieDetails = async (
   movieId: string | number | undefined | null
 ): Promise<MovieDetails | null> => {
-  // 1. ZABEZPIECZENIE: Jeśli ID jest puste, nie robimy zapytania
   if (!movieId) {
-    console.warn("fetchMovieDetails: Przerwano - brak movieId");
     return null;
   }
 
   try {
     const response = await fetch(
-      `${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}&language=en-US`, // Dodajmy język polski przy okazji
+      `${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}&language=en-US`, 
       {
         method: "GET",
         headers: TMDB_CONFIG.headers,
       }
     );
 
-    // 2. OBSŁUGA BŁĘDU HTTP (np. 404)
     if (!response.ok) {
-      // Jeśli to 404, to może być ID serialu, a my pytamy endpoint filmowy
       console.error(`fetchMovieDetails Error: ${response.status} for ID: ${movieId}`);
       throw new Error(`Failed to fetch movie details: ${response.statusText}`);
     }
@@ -101,7 +94,6 @@ export const fetchMovieDetails = async (
     return data;
   } catch (error) {
     console.error("Error fetching movie details:", error);
-    // W React Native lepiej zwrócić null niż throw, żeby nie crashować całego UI
     return null; 
   }
 };
@@ -110,12 +102,12 @@ export const fetchTVSeries = async ({
   query,
   genreId,
   sortBy,
-  page = 1, // DODANO: domyślna strona
+  page = 1,
 }: {
   query?: string;
   genreId?: number | string | null;
   sortBy?: string;
-  page?: number; // DODANO: typ
+  page?: number; 
 }): Promise<TVSeries[]> => {
   let endpoint;
   let sortParam = sortBy || SORT_OPTIONS.POPULARITY;
@@ -128,19 +120,15 @@ export const fetchTVSeries = async ({
     sortParam = "popularity.desc";
   }
 
-  // Budowanie endpointów z uwzględnieniem PAGE
   if (query) {
     endpoint = `${TMDB_CONFIG.BASE_URL}/search/tv?query=${encodeURIComponent(query)}&page=${page}`;
     endpoint += "&vote_count.gte=1";
   } else if (genreId) {
-    // DODANO: &page=${page}
     endpoint = `${TMDB_CONFIG.BASE_URL}/discover/tv?with_genres=${genreId}&sort_by=${sortParam}&page=${page}`;
   } else if (sortBy) {
-    // DODANO: &page=${page}
     endpoint = `${TMDB_CONFIG.BASE_URL}/discover/tv?sort_by=${sortParam}&page=${page}`;
     endpoint += "&vote_count.gte=200";
   } else {
-    // DODANO: &page=${page}
     endpoint = `${TMDB_CONFIG.BASE_URL}/trending/tv/week?page=${page}`;
   }
 
@@ -222,7 +210,7 @@ export const fetchSeasonDetails = async (
 export const WATCH_PROVIDERS = {
   NETFLIX: 8,
   DISNEY_PLUS: 337,
-  MAX: 1899,       // Formerly HBO Max
+  MAX: 1899,
   AMAZON_PRIME: 119,
   APPLE_TV: 350,
   SKYSHOWTIME: 1773
@@ -279,9 +267,6 @@ export const fetchMoviesForGame = async ({
 }): Promise<any[]> => {
   const mediaType = type === 'tv' ? 'tv' : 'movie';
   
-  // TERAZ NIE POTRZEBUJEMY JUŻ MAPOWANIA!
-  // Zakładamy, że UI przekazało poprawne ID z odpowiedniej listy (TV_GENRES lub MOVIE_GENRES)
-  
   const genresString = genreIds.join("|"); 
   const providersString = providerIds.join("|"); 
   
@@ -292,18 +277,17 @@ export const fetchMoviesForGame = async ({
   if (genresString) baseEndpoint += `&with_genres=${genresString}`;
   if (providersString) baseEndpoint += `&with_watch_providers=${providersString}`;
 
-  // ... reszta funkcji (pobieranie stron, losowanie, normalizacja) bez zmian ...
-  // (Skopiuj resztę z poprzedniej wersji - logikę fetch, probe, shuffle)
-  
   try {
     const probeResponse = await fetch(`${baseEndpoint}&page=1`, {
        method: "GET",
        headers: TMDB_CONFIG.headers,
     });
-    // ... itd ...
+    
     if (!probeResponse.ok) throw new Error(`Probe fetch failed`);
+    
     const probeData = await probeResponse.json();
     const totalPages = probeData.total_pages || 1;
+    
     if (totalPages === 0) return [];
     
     const maxPage = Math.min(totalPages, 20); 
