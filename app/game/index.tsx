@@ -84,9 +84,9 @@ export default function GameWelcomeScreen() {
             >
             <View className="flex-1 mr-4">
                 <View className="flex-row items-center mb-2">
-                    <Text className="text-2xl text-gray-300 font-bold mr-2">With Partner</Text>
+                    <Text className="text-2xl text-gray-300 font-bold mr-2">With Friends</Text>
                     <View className="bg-gray-700 px-2 py-1 rounded-md border border-gray-600">
-                        <Text className="text-gray-300 text-xs font-bold uppercase">Soon</Text>
+                        <Text className="text-gray-300 text-xs font-bold uppercase">NOW</Text>
                     </View>
                 </View>
                 <Text className="text-gray-500 text-sm leading-5">

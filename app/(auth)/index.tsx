@@ -71,7 +71,6 @@ const Welcome = () => {
                 </Text>
               </TouchableOpacity>
 
-              {/* Przycisk Gościa */}
               <TouchableOpacity
                 onPress={() => router.replace('/(tabs)')}
                 className="mt-6"
@@ -85,7 +84,6 @@ const Welcome = () => {
           </View>
         </ScrollView>
         
-        {/* Pasek statusu - usunąłem backgroundColor, żeby gradient przebijał */}
         <StatusBar style="light" />
       </SafeAreaView>
     </View>

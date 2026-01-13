@@ -14,7 +14,6 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 
-// 1. IMPORTY DO OBSŁUGI MOTYWU (To naprawia błyski)
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 
 configureReanimatedLogger({
@@ -22,28 +21,25 @@ configureReanimatedLogger({
   strict: false, 
 });
 
-// 2. DEFINICJA MOTYWU
-// Nadpisujemy domyślny kolor tła nawigacji (który jest biały) na Twój ciemny.
 const MyDarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#000C1C', // <--- KLUCZOWE: Kolor tła pod ekranami
+    background: '#000C1C', 
     card: '#000C1C',
     text: '#ffffff',
     border: '#232533',
   },
 };
-
+ 
 export default function RootLayout() {
 
   useEffect(() => {
     const hideSystemBars = async () => {
       if (Platform.OS === 'android') {
         try {
-          await NavigationBar.setBehaviorAsync('overlay-swipe');
+          await NavigationBar.setPositionAsync("absolute");
           await NavigationBar.setVisibilityAsync("hidden");
-          await NavigationBar.setBackgroundColorAsync("#000C1C"); 
           
         } catch (e) {
           console.log("Błąd ukrywania pasków:", e);
@@ -55,10 +51,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    // 3. Dodano backgroundColor do GestureHandlerRootView jako ostateczny fallback
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000C1C' }}>
       <GlobalProvider>
-        {/* 4. Owiń Stack w ThemeProvider */}
         <ThemeProvider value={MyDarkTheme}>
           <Stack> 
             <Stack.Screen 
