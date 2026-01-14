@@ -9,11 +9,30 @@ export default function GameWelcomeScreen() {
   const router = useRouter();
 
   const handleSoloPress = () => {
-    router.push("/game/setup");
+    // Singleplayer (istniejąca ścieżka)
+    router.push("/game/singleplayer/setup");
   };
 
   const handleGroupPress = () => {
-    Alert.alert("Coming Soon!", "We are working on a mode for couples and groups. Stay tuned for updates!");
+    // Multiplayer - wybór akcji
+    Alert.alert(
+      "Multiplayer Mode",
+      "Do you want to host a new game or join an existing party?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Join Game",
+          onPress: () => router.push("/game/multiplayer/lobby" as any) // Ekran wpisywania kodu
+        },
+        {
+          text: "Host Game",
+          onPress: () => router.push("/game/multiplayer/create" as any) // Ekran konfiguracji
+        }
+      ]
+    );
   };
 
   return (
@@ -45,6 +64,7 @@ export default function GameWelcomeScreen() {
         </View>
 
         <View className="gap-6">
+          {/* SOLO BUTTON */}
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleSoloPress}
@@ -54,7 +74,7 @@ export default function GameWelcomeScreen() {
               <View className="flex-row items-center mb-2">
                 <Text className="text-2xl text-white font-bold mr-2">Solo</Text>
                 <View className="bg-secondary/20 px-2 py-1 rounded-md">
-                  <Text className="text-secondary text-xs font-bold uppercase">Now</Text>
+                  <Text className="text-secondary text-xs font-bold uppercase">Classic</Text>
                 </View>
               </View>
               <Text className="text-gray-400 text-sm leading-5">
@@ -71,27 +91,32 @@ export default function GameWelcomeScreen() {
             </View>
           </TouchableOpacity>
 
+          {/* MULTIPLAYER BUTTON (ZAKTUALIZOWANY) */}
           <TouchableOpacity
-            activeOpacity={0.9}
+            activeOpacity={0.8}
             onPress={handleGroupPress}
-            className="w-full bg-black-100 border-2 border-gray-800 rounded-3xl p-6 flex-row items-center justify-between opacity-60"
+            // Zmiana stylu: usunięto opacity, dodano border secondary, cień
+            className="w-full bg-black-100 border-2 border-secondary rounded-3xl p-6 flex-row items-center justify-between shadow-lg shadow-orange-500/20"
           >
             <View className="flex-1 mr-4">
               <View className="flex-row items-center mb-2">
-                <Text className="text-2xl text-gray-300 font-bold mr-2">With Friends</Text>
-                <View className="bg-gray-700 px-2 py-1 rounded-md border border-gray-600">
-                  <Text className="text-gray-300 text-xs font-bold uppercase">NOW</Text>
+                <Text className="text-2xl text-white font-bold mr-2">With Friends</Text>
+                <View className="bg-secondary px-2 py-1 rounded-md border border-secondary">
+                  {/* Zmiana badge'a na NEW */}
+                  <Text className="text-primary text-xs font-black uppercase">NEW</Text>
                 </View>
               </View>
-              <Text className="text-gray-500 text-sm leading-5">
+              {/* Zmiana koloru tekstu na jaśniejszy */}
+              <Text className="text-gray-300 text-sm leading-5">
                 Connect phones and match movies together. No more fighting over the remote!
               </Text>
             </View>
             
-            <View className="w-14 h-14 bg-gray-800 rounded-full items-center justify-center border border-gray-700">
+            {/* Zmiana koloru kółka na secondary (pomarańczowy) */}
+            <View className="w-14 h-14 bg-secondary rounded-full items-center justify-center shadow-md shadow-secondary/50">
               <Image 
                 source={icons.people}
-                className="w-6 h-6 opacity-50" 
+                className="w-6 h-6" 
                 tintColor="white" 
               />
             </View>

@@ -685,7 +685,8 @@ export const saveGameToHistory = async (userId: string, items: any[]) => {
       ID.unique(),
       {
         user_id: userId,
-        items: jsonItems
+        items: jsonItems,
+        game_mode: "singleplayer"
       }
     );
     return newEntry;

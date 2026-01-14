@@ -52,7 +52,7 @@ export default function GameSetup() {
 
   const handleStartGame = () => {
     router.push({
-      pathname: "/game/play",
+      pathname: "/game/singleplayer/play",
       params: {
         type: contentType,
         genres: JSON.stringify(selectedGenres),

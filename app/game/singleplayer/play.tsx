@@ -4,12 +4,12 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, Image, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  Extrapolation,
-  interpolate,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
+    Extrapolation,
+    interpolate,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -47,7 +47,7 @@ export default function GamePlay() {
     }));
 
     router.replace({
-      pathname: "/game/results",
+      pathname: "/game/singleplayer/results",
       params: { results: JSON.stringify(minifiedResults) }
     });
   };

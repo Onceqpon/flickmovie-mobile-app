@@ -63,6 +63,11 @@ const GameHistory = () => {
     const date = new Date(item.$createdAt).toLocaleDateString();
     const time = new Date(item.$createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // --- LOGIKA WYŚWIETLANIA TRYBU GRY ---
+    const isMultiplayer = item.game_mode === 'multiplayer';
+    const modeLabel = isMultiplayer ? "Multiplayer" : "Single Player";
+    const iconColor = isMultiplayer ? "#FF9C01" : "#4ADE80"; // Pomarańczowy dla Multi, Zielony dla Single
+
     return (
       <View className="bg-black-100 mb-6 rounded-2xl border border-black-200 shadow-sm shadow-black/40 overflow-hidden">
         
@@ -73,11 +78,12 @@ const GameHistory = () => {
                         source={icons.play} 
                         className="w-4 h-4" 
                         resizeMode="contain" 
-                        tintColor="#FF9C01" 
+                        tintColor={iconColor} // Kolor zależny od trybu
                     />
                 </View>
                 <View>
-                    <Text className="text-white font-psemibold text-lg">Game Session</Text>
+                    {/* Tutaj wyświetlamy tryb gry */}
+                    <Text className="text-white font-psemibold text-lg">{modeLabel} Session</Text>
                     <Text className="text-gray-400 text-xs font-pregular">
                         {date} at {time} • {item.items.length} matches
                     </Text>
@@ -136,7 +142,7 @@ const GameHistory = () => {
 
   return (
     <View className="flex-1 bg-[#1E1E2D]">
-     <LinearGradient
+      <LinearGradient
         colors={["#000C1C", "#161622", "#1E1E2D"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
