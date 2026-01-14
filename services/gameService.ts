@@ -238,10 +238,21 @@ export const startGame = async (gameId: string) => {
   const movies = await fetchMoviesForGame({
       genreIds: mergedGenres,
       providerIds: providers,
-      type: gameDoc.content_type // 'movie' lub 'tv'
+      type: gameDoc.content_type
   });
 
+  // --- ZABEZPIECZENIE (SAFEGUARD) ---
+  // Wymagamy DOKŁADNIE (lub więcej) 10 filmów na gracza.
+  // Jeśli jest mniej, gra się nie rozpoczyna.
   const requiredCount = participants.length * 10;
+
+  if (movies.length < requiredCount) {
+      throw new Error(
+          `Not enough movies! Found ${movies.length}, but need ${requiredCount} (${participants.length} players × 10). Please add more Genres or Providers.`
+      );
+  }
+
+  // Bierzemy tylko tyle ile potrzeba
   const pool = movies.slice(0, requiredCount);
 
   await database.updateDocument(
@@ -330,4 +341,30 @@ export const saveToHistory = async (userId: string, winners: any[], mode: 'multi
     } catch (error: any) {
         throw new Error(error.message || "Failed to save history");
     }
+};
+
+export const updateGameSettings = async (
+    gameId: string, 
+    config: { 
+        rounds: number; 
+        genresCount: number;
+        contentType: 'movie' | 'tv';
+        providers: number[];
+    }
+) => {
+  try {
+    await database.updateDocument(
+      DATABASE_ID,
+      ACTIVE_GAMES_COLLECTION_ID,
+      gameId,
+      {
+        round_total: config.rounds,
+        genres_required_count: config.genresCount,
+        content_type: config.contentType,
+        providers: JSON.stringify(config.providers)
+      }
+    );
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update settings");
+  }
 };

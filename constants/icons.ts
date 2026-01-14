@@ -5,11 +5,13 @@ import left_arrow from "@/assets/icons/arrowleft.png";
 import bookmark from "@/assets/icons/bookmark.png";
 import clapperboard from "@/assets/icons/clapperboard.png";
 import close from "@/assets/icons/close.png";
+import copy from "@/assets/icons/copy.png";
 import edit from "@/assets/icons/edit.png";
 import eye from "@/assets/icons/eye.png";
 import heart from "@/assets/icons/heart.png";
 import home from "@/assets/icons/home.png";
 import logo from "@/assets/icons/logo.png";
+import menu from "@/assets/icons/menu.png";
 import path from "@/assets/icons/path.png";
 import people from "@/assets/icons/people.png";
 import play from "@/assets/icons/play.png";
@@ -45,5 +47,7 @@ export const icons = {
   edit,
   heart,
   path,
-  people
+  people,
+  menu,
+  copy
 };
