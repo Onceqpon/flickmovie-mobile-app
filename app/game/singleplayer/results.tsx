@@ -81,7 +81,7 @@ export default function GameResults() {
                 </Text>
                 
                 <TouchableOpacity 
-                onPress={() => router.replace("/game/setup" as any)}
+                onPress={() => router.replace("/game/singleplayer/setup" as any)}
                 className="w-full"
                 >
                 <LinearGradient

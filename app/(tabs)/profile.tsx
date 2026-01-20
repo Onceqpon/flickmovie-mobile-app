@@ -122,8 +122,12 @@ const Profile = () => {
     );
   }
 
-  const rawAvatar = (user?.prefs as any)?.avatar;
-  const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
+  // --- LOGIKA AVATARA ---
+  // Jeśli user ma własny avatar -> używamy go.
+  // Jeśli nie -> generujemy URL do API Appwrite z inicjałami.
+  const userAvatarUrl = (user?.prefs as any)?.avatar 
+    ? (user?.prefs as any).avatar 
+    : `https://cloud.appwrite.io/v1/avatars/initials?name=${encodeURIComponent(user?.name || 'User')}&project=${process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID}`;
 
   return (
     <View className="flex-1 bg-[#1E1E2D]">
@@ -140,20 +144,11 @@ const Profile = () => {
           <View className="items-center mt-6 mb-8">
             <View className="relative">
                 <View className="w-28 h-28 rounded-full border-4 border-secondary/20 justify-center items-center bg-white/5 overflow-hidden shadow-xl">
-                    {userAvatar ? (
-                        <Image 
-                          source={{ uri: userAvatar }} 
-                          className="w-full h-full" 
-                          resizeMode="cover" 
-                        />
-                    ) : (
-                        <Image 
-                          source={icons.user} 
-                          className="w-12 h-12" 
-                          resizeMode="contain" 
-                          style={{ tintColor: '#fff' }}
-                        />
-                    )}
+                    <Image 
+                        source={{ uri: userAvatarUrl }} 
+                        className="w-full h-full" 
+                        resizeMode="cover" 
+                    />
                 </View>
                 <TouchableOpacity 
                     onPress={() => router.push('/profile/edit')}
@@ -212,12 +207,12 @@ const Profile = () => {
             <MenuItem 
                 icon={icons.search} 
                 title="App Settings" 
-                onPress={() => {}} 
+                onPress={() => router.push('/profile/app-settings')} 
             />
              <MenuItem 
                 icon={icons.home} 
                 title="Appearance" 
-                onPress={() => {}} 
+                onPress={() => router.push('/profile/appearance')} 
             />
           </View>
 

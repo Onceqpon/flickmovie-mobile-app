@@ -8,6 +8,7 @@ import close from "@/assets/icons/close.png";
 import copy from "@/assets/icons/copy.png";
 import edit from "@/assets/icons/edit.png";
 import eye from "@/assets/icons/eye.png";
+import heart2 from "@/assets/icons/heart(2).png";
 import heart from "@/assets/icons/heart.png";
 import home from "@/assets/icons/home.png";
 import logo from "@/assets/icons/logo.png";
@@ -49,5 +50,6 @@ export const icons = {
   path,
   people,
   menu,
-  copy
+  copy,
+  heart2
 };

@@ -2,19 +2,32 @@ import { icons } from "@/constants/icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function GameWelcomeScreen() {
   const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const safeNavigate = (path: string) => {
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    router.push(path as any);
+
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 1000);
+  };
 
   const handleSoloPress = () => {
-    // Singleplayer (istniejąca ścieżka)
-    router.push("/game/singleplayer/setup");
+    safeNavigate("/game/singleplayer/setup");
   };
 
   const handleGroupPress = () => {
-    // Multiplayer - wybór akcji
+    if (isNavigating) return;
+
     Alert.alert(
       "Multiplayer Mode",
       "Do you want to host a new game or join an existing party?",
@@ -25,11 +38,11 @@ export default function GameWelcomeScreen() {
         },
         {
           text: "Join Game",
-          onPress: () => router.push("/game/multiplayer/lobby" as any) // Ekran wpisywania kodu
+          onPress: () => safeNavigate("/game/multiplayer/join")
         },
         {
           text: "Host Game",
-          onPress: () => router.push("/game/multiplayer/create" as any) // Ekran konfiguracji
+          onPress: () => safeNavigate("/game/multiplayer/create")
         }
       ]
     );
@@ -64,10 +77,10 @@ export default function GameWelcomeScreen() {
         </View>
 
         <View className="gap-6">
-          {/* SOLO BUTTON */}
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleSoloPress}
+            disabled={isNavigating}
             className="w-full bg-black-100 border-2 border-secondary/50 rounded-3xl p-6 flex-row items-center justify-between shadow-lg shadow-black/40"
           >
             <View className="flex-1 mr-4">
@@ -91,28 +104,24 @@ export default function GameWelcomeScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* MULTIPLAYER BUTTON (ZAKTUALIZOWANY) */}
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleGroupPress}
-            // Zmiana stylu: usunięto opacity, dodano border secondary, cień
+            disabled={isNavigating}
             className="w-full bg-black-100 border-2 border-secondary rounded-3xl p-6 flex-row items-center justify-between shadow-lg shadow-orange-500/20"
           >
             <View className="flex-1 mr-4">
               <View className="flex-row items-center mb-2">
                 <Text className="text-2xl text-white font-bold mr-2">With Friends</Text>
                 <View className="bg-secondary px-2 py-1 rounded-md border border-secondary">
-                  {/* Zmiana badge'a na NEW */}
                   <Text className="text-primary text-xs font-black uppercase">NEW</Text>
                 </View>
               </View>
-              {/* Zmiana koloru tekstu na jaśniejszy */}
               <Text className="text-gray-300 text-sm leading-5">
                 Connect phones and match movies together. No more fighting over the remote!
               </Text>
             </View>
             
-            {/* Zmiana koloru kółka na secondary (pomarańczowy) */}
             <View className="w-14 h-14 bg-secondary rounded-full items-center justify-center shadow-md shadow-secondary/50">
               <Image 
                 source={icons.people}
@@ -123,7 +132,15 @@ export default function GameWelcomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <View className="absolute bottom-10 left-0 right-0 items-center">
+        <View className="absolute bottom-8 left-0 right-0 items-center gap-4">
+          <TouchableOpacity 
+            onPress={() => router.push('/(tabs)' as any)}
+            disabled={isNavigating}
+            className="px-8 py-3 bg-white/5 rounded-full border border-white/10"
+          >
+            <Text className="text-white font-bold text-sm uppercase tracking-widest">Back</Text>
+          </TouchableOpacity>
+
           <Text className="text-gray-600 text-xs font-pregular">
             Powered by TMDb & JustWatch
           </Text>

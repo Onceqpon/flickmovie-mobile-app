@@ -2,9 +2,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { cssInterop } from "nativewind";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, BackHandler, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import SwipeableMovieCard from "@/components/SwipeableMovieCard";
 import { icons } from "@/constants/icons";
 import { useGlobalContext } from "@/context/GlobalProvider";
 import {
@@ -12,6 +13,7 @@ import {
     GameState,
     getGame,
     getGameParticipants,
+    leaveGame,
     nextRoundOrFinish,
     submitRoundVotes,
     subscribeToGame,
@@ -25,14 +27,12 @@ const MultiplayerPlay = () => {
     const router = useRouter();
     const { gameId } = useLocalSearchParams();
 
-    // --- STATE ---
     const [game, setGame] = useState<GameState | null>(null);
-    // REF: Kluczowy do poprawnego działania Realtime (zapobiega "stale closures")
     const gameRef = useRef<GameState | null>(null);
     
     const [participants, setParticipants] = useState<GameParticipant[]>([]);
-    
-    // Pula filmów widoczna dla TEGO konkretnego gracza
+    const participantsRef = useRef<GameParticipant[]>([]);
+
     const [myMoviesPool, setMyMoviesPool] = useState<any[]>([]);
     
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -40,226 +40,238 @@ const MultiplayerPlay = () => {
     const [isWaiting, setIsWaiting] = useState(false);
     const [processingRound, setProcessingRound] = useState(false);
 
-    // --- LOGIKA LIMITU (QUOTA) ---
-    // Np. 5 rund -> R1: 5 like'ów, R2: 4 like'i ... R5: 1 like (Top 1)
-    // Lub prościej: R1=5, R2=4, R3=3... ale nie mniej niż 1.
-    const maxLikes = game ? Math.max(1, (game.round_total - game.round_current + 2)) : 5; 
-    // UWAGA: Możesz dostosować wzór. Tutaj dałem luźniejszy (+2). 
-    // Jeśli chcesz ostro (Top 3 w finale), w handleSwipe jest dodatkowy check.
-    
-    const likesLeft = Math.max(0, maxLikes - likedMovies.length);
+    const getMaxLikes = (round: number, playersCount: number) => {
+        switch (round) {
+            case 1: return 5;
+            case 2: return playersCount > 2 ? 4 : 3; 
+            case 3: return 2;
+            case 4: return 1;
+            default: return 1;
+        }
+    };
 
-    // --- INIT ---
+    const maxLikes = game ? getMaxLikes(game.round_current, participants.length) : 1;
+    const likesLeft = Math.max(0, maxLikes - likedMovies.length);
+    const canLike = likesLeft > 0;
+
     useEffect(() => {
         if (!gameId) return;
-
         let unsubGame: any;
         let unsubParticipants: any;
 
         const initGame = async () => {
             try {
-                // 1. Pobierz stan początkowy "na sztywno"
                 const initialGame = await getGame(gameId as string);
                 updateGameState(initialGame);
                 
                 const initialParticipants = await getGameParticipants(gameId as string);
-                // Sortujemy po dacie dołączenia, żeby indeksy były stałe dla każdego gracza
                 const sortedParticipants = initialParticipants.sort((a, b) => a.$createdAt.localeCompare(b.$createdAt));
+                
                 setParticipants(sortedParticipants as unknown as GameParticipant[]);
+                participantsRef.current = sortedParticipants as unknown as GameParticipant[];
 
-                // Oblicz moją pulę na start
                 calculateMyPool(initialGame, sortedParticipants as unknown as GameParticipant[]);
 
-                // 2. Subskrypcja Gry
                 unsubGame = subscribeToGame(gameId as string, (updatedGame) => {
-                    // Wykrycie zmiany rundy
-                    if (gameRef.current && updatedGame.round_current > gameRef.current.round_current) {
-                        handleNewRound(updatedGame);
+                    if (!updatedGame) {
+                        Alert.alert("Game Ended", "The host has ended the game.");
+                        router.replace("/(tabs)/home" as any);
+                        return;
                     }
-                    
-                    // Wykrycie końca gry
+
+                    if (gameRef.current && updatedGame.round_current > gameRef.current.round_current) {
+                        handleNewRound(updatedGame, participantsRef.current);
+                    }
                     if (updatedGame.status === 'finished') {
                         router.replace({ pathname: "/game/multiplayer/results" as any, params: { gameId: updatedGame.$id } });
                         return;
                     }
-
                     updateGameState(updatedGame);
                     
-                    // Fallback: jeśli weszliśmy w trakcie i nie mamy puli
                     if (myMoviesPool.length === 0 && updatedGame.movies_pool) {
-                        calculateMyPool(updatedGame, participants);
+                        calculateMyPool(updatedGame, participantsRef.current);
                     }
                 });
 
-                // 3. Subskrypcja Uczestników
                 unsubParticipants = subscribeToParticipants(gameId as string, (updatedList) => {
+                    if (!updatedList || updatedList.length === 0) {
+                         Alert.alert("Game Ended", "The lobby was closed.");
+                         router.replace("/(tabs)/home" as any);
+                         return;
+                    }
+
                     const sorted = updatedList.sort((a, b) => a.$createdAt.localeCompare(b.$createdAt));
                     setParticipants(sorted);
+                    participantsRef.current = sorted;
+                    
+                    const hostStillInGame = sorted.some(p => p.user_id === gameRef.current?.host_id);
+                    if (!hostStillInGame && gameRef.current) {
+                        Alert.alert("Game Over", "The host left the game.");
+                        router.replace("/(tabs)/home" as any);
+                        return;
+                    }
+
+                    if (sorted.length < 2 && gameRef.current?.status === 'in_progress') {
+                        Alert.alert("Game Over", "Not enough players to continue.");
+                        router.replace("/(tabs)/home" as any);
+                        return;
+                    }
                     checkIfAllReady(sorted);
                 });
-
-            } catch (error) {
-                console.error("Init Error:", error);
-                Alert.alert("Error", "Connection lost");
+            } catch (error: any) {
+                if (error.message && (error.message.includes('404') || error.message.includes('not found'))) {
+                    Alert.alert("Game Ended", "The host ended the game.");
+                    router.replace("/(tabs)/home" as any);
+                }
             }
         };
 
         initGame();
-
-        return () => {
-            if (unsubGame) unsubGame();
-            if (unsubParticipants) unsubParticipants();
-        };
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => { handleLeaveGame(); return true; });
+        return () => { if (unsubGame) unsubGame(); if (unsubParticipants) unsubParticipants(); backHandler.remove(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [gameId]); 
 
-    const updateGameState = (newState: GameState) => {
-        setGame(newState);
-        gameRef.current = newState;
-    };
-
-    // --- LOGIKA "LEJKA" (KTO WIDZI JAKIE FILMY) ---
+    const updateGameState = (newState: GameState) => { setGame(newState); gameRef.current = newState; };
+    
     const calculateMyPool = (gameState: GameState, currentParticipants: GameParticipant[]) => {
         if (!user || !gameState.movies_pool) return;
         
         let allMovies: any[] = [];
-        try {
-            allMovies = JSON.parse(gameState.movies_pool);
-        } catch (e) {
-            console.error("JSON Parse Error", e);
-            return;
-        }
+        try { allMovies = JSON.parse(gameState.movies_pool); } catch (e) { return; }
 
-        // RUNDA 1: Dzielimy pulę na części. Każdy dostaje swoje unikalne filmy.
-        if (gameState.round_current === 1 && currentParticipants.length > 0) {
+        if (gameState.round_current === 1) {
             const myIndex = currentParticipants.findIndex(p => p.user_id === user.$id);
             if (myIndex !== -1) {
-                // Gracz 1: index 0-10, Gracz 2: index 10-20 itd.
-                const start = myIndex * 10;
-                const end = start + 10;
-                const mySlice = allMovies.slice(start, end);
-                setMyMoviesPool(mySlice);
+                const cardsPerPlayer = 10;
+                const start = myIndex * cardsPerPlayer;
+                const end = start + cardsPerPlayer;
+                setMyMoviesPool(allMovies.slice(start, end));
+                return;
+            }
+        } else if (gameState.round_current === 2) {
+            const myParticipant = currentParticipants.find(p => p.user_id === user.$id);
+            if (myParticipant) {
+                const myVotes = JSON.parse(myParticipant.votes || '{}');
+                const myRound1Votes = myVotes['round_1'] || [];
+                
+                const filteredPool = allMovies.filter((m: any) => {
+                    const iVotedForThis = myRound1Votes.some((voteId: any) => String(voteId) === String(m.id));
+                    return !iVotedForThis; 
+                });
+                setMyMoviesPool(filteredPool);
                 return;
             }
         }
-        
-        // RUNDA 2+: Wszyscy widzą te same filmy (te, które przeszły selekcję)
         setMyMoviesPool(allMovies);
     };
 
-    const handleNewRound = (newGameData: GameState) => {
-        // Resetujemy widok gracza
-        calculateMyPool(newGameData, participants);
-        setCurrentIndex(0);
-        setLikedMovies([]);
-        setIsWaiting(false);
-        setProcessingRound(false);
+    const handleNewRound = (newGameData: GameState, currentParticipants: GameParticipant[]) => { 
+        calculateMyPool(newGameData, currentParticipants); 
+        setCurrentIndex(0); 
+        setLikedMovies([]); 
+        setIsWaiting(false); 
+        setProcessingRound(false); 
     };
 
-    // --- HOST LOGIC ---
     const checkIfAllReady = async (currentParticipants: GameParticipant[]) => {
         const currentGame = gameRef.current;
         if (!currentGame || !user) return;
-        
-        // Tylko Host
         if (currentGame.host_id !== user.$id) return;
-        
-        // Blokady
         if (processingRound) return;
         if (currentGame.status === 'finished') return;
-
+        
         const allReady = currentParticipants.every(p => p.is_ready);
-
         if (allReady && currentParticipants.length > 0) {
             setProcessingRound(true);
-            try {
-                // Obliczamy wyniki rundy
-                await nextRoundOrFinish(currentGame.$id, currentGame.round_current, currentGame.round_total);
-            } catch (error: any) {
-                console.error("HOST ERROR:", error);
-                setProcessingRound(false);
-            }
+            try { await nextRoundOrFinish(currentGame.$id, currentGame.round_current, 4); } 
+            catch (error) { setProcessingRound(false); }
         }
     };
 
-    // --- USER ACTION ---
+    const submitVotes = async (finalVotes: number[]) => {
+        setIsWaiting(true);
+        const myParticipantId = participantsRef.current.find(p => p.user_id === user?.$id)?.$id;
+        const currentGame = gameRef.current;
+        if (myParticipantId && currentGame) {
+            try { await submitRoundVotes(myParticipantId, currentGame.round_current, finalVotes); }
+            catch (error) { setIsWaiting(false); Alert.alert("Error", "Try again."); }
+        }
+    };
+
     const handleSwipe = async (liked: boolean) => {
         const currentMovie = myMoviesPool[currentIndex];
-        const isLastRound = game?.round_current === game?.round_total;
 
-        // --- BLOKADA LIMITU ---
-        if (liked) {
-            // Hard limit dla ostatniej rundy (Top 3)
-            if (isLastRound && likedMovies.length >= 3) {
-                Alert.alert("Final Round", "You can only pick your Top 3 favorites now. You must pass.");
-                return;
-            }
-            // Limit dynamiczny dla wcześniejszych rund
-            if (likesLeft <= 0) {
-                Alert.alert("Limit Reached", `You used all ${maxLikes} picks for this round. You must pass.`);
-                return;
-            }
-            
-            setLikedMovies(prev => [...prev, currentMovie.id]);
+        if (liked && !canLike) { 
+            Alert.alert("Limit Reached", `You can only pick ${maxLikes} movies in this round.`); 
+            return; 
         }
 
-        // Czy to koniec filmów w mojej kolejce?
-        if (currentIndex >= myMoviesPool.length - 1) {
-            setIsWaiting(true);
-            
-            const myParticipantId = participants.find(p => p.user_id === user?.$id)?.$id;
-            const currentGame = gameRef.current;
+        const newLikedMovies = liked ? [...likedMovies, currentMovie.id] : likedMovies;
+        setLikedMovies(newLikedMovies);
 
-            if (myParticipantId && currentGame) {
-                try {
-                    const finalVotes = liked ? [...likedMovies, currentMovie.id] : likedMovies;
-                    await submitRoundVotes(myParticipantId, currentGame.round_current, finalVotes);
-                } catch { 
-                    Alert.alert("Error", "Failed to submit votes.");
-                    setIsWaiting(false);
-                }
+        const hasUsedAllPicks = newLikedMovies.length >= maxLikes;
+        const isLastCard = currentIndex >= myMoviesPool.length - 1;
+
+        if (hasUsedAllPicks) {
+            await submitVotes(newLikedMovies);
+        } else if (isLastCard) {
+            const remainingMovies = myMoviesPool.filter(m => !newLikedMovies.includes(m.id));
+            
+            if (remainingMovies.length === 0) {
+                await submitVotes(newLikedMovies);
+            } else {
+                setMyMoviesPool(remainingMovies);
+                setCurrentIndex(0);
+                Alert.alert("Round Incomplete", `You still need to pick ${maxLikes - newLikedMovies.length} more movies. Reviewing passed titles.`);
             }
         } else {
             setCurrentIndex(prev => prev + 1);
         }
     };
 
+    const handleLeaveGame = () => {
+        Alert.alert("Leave Game?", "This ends the game for everyone.", [
+            { text: "Cancel", style: "cancel" },
+            { text: "Leave", style: "destructive", onPress: async () => {
+                if (game && user) {
+                    const isHost = game.host_id === user.$id;
+                    const myPart = participantsRef.current.find(p => p.user_id === user.$id);
+                    if (myPart) await leaveGame(game.$id, myPart.$id, isHost);
+                }
+                router.replace("/(tabs)/home" as any);
+            }}
+        ]);
+    };
+
     const currentMovie = myMoviesPool[currentIndex];
 
-    // --- UI RENDER ---
     if (!game || !currentMovie) {
         return (
             <View className="flex-1 bg-[#1E1E2D] justify-center items-center">
                 <LinearGradient colors={["#000C1C", "#1E1E2D"]} className="absolute w-full h-full" />
                 <ActivityIndicator size="large" color="#FF9C01" />
-                <Text className="text-white mt-4 font-bold">
-                    {isWaiting ? "Waiting for players..." : "Syncing game..."}
-                </Text>
+                <Text className="text-white mt-4 font-bold">{isWaiting ? "Waiting for players..." : "Syncing..."}</Text>
             </View>
         );
     }
 
-    const isLastRound = game.round_current === game.round_total;
-
     return (
         <View className="flex-1 bg-[#1E1E2D]">
             <LinearGradient colors={["#000C1C", "#1E1E2D"]} className="absolute w-full h-full" />
-            <SafeAreaView className="flex-1 p-4">
-
-                {/* HEADER */}
-                <View className="flex-row justify-between items-center mb-4">
+            <SafeAreaView className="flex-1 p-4 pb-8">
+                <View className="flex-row justify-between items-center mb-4 z-10">
                     <View>
                         <Text className="text-gray-400 text-xs font-bold tracking-widest uppercase">Round</Text>
                         <Text className="text-secondary text-2xl font-black">
-                            {game.round_current} <Text className="text-white text-base font-normal">/ {game.round_total}</Text>
+                            {game.round_current} <Text className="text-white text-base font-normal">/ 4</Text>
                         </Text>
                     </View>
                     
-                    {/* LICZNIK DOSTĘPNYCH LIKÓW */}
                     <View className="items-center">
-                         <Text className="text-gray-400 text-xs font-bold tracking-widest uppercase">Picks Available</Text>
+                         <Text className="text-gray-400 text-xs font-bold tracking-widest uppercase">Picks Left</Text>
                          <Text className={`text-3xl font-black ${likesLeft === 0 ? 'text-red-500' : 'text-green-400'}`}>
-                            {likesLeft} <Text className="text-white text-base font-normal">/ {isLastRound ? 3 : maxLikes}</Text>
+                            {likesLeft} <Text className="text-white text-base font-normal">/ {maxLikes}</Text>
                          </Text>
                     </View>
 
@@ -276,78 +288,51 @@ const MultiplayerPlay = () => {
                         <ActivityIndicator size="large" color="#FF9C01" className="mb-6" />
                         <Text className="text-white text-2xl font-bold text-center mb-2">Round Done!</Text>
                         <Text className="text-gray-400 text-center mb-8">Waiting for others...</Text>
-                        
                         <View className="w-full">
                             {participants.map(p => (
                                 <View key={p.$id} className="flex-row items-center justify-between mb-3 bg-white/5 p-3 rounded-xl">
                                     <View className="flex-row items-center">
-                                        <Image 
-                                            source={{ uri: p.avatar_url || "https://cloud.appwrite.io/v1/avatars/initials?name=" + p.nickname }} 
-                                            className="w-8 h-8 rounded-full mr-3 bg-gray-600" 
-                                        />
+                                        <Image source={{ uri: p.avatar_url || `https://cloud.appwrite.io/v1/avatars/initials?name=${p.nickname}` }} className="w-8 h-8 rounded-full mr-3 bg-gray-600" />
                                         <Text className="text-white font-bold">{p.nickname}</Text>
                                     </View>
-                                    {p.is_ready ? (
-                                        <Text className="text-green-400 font-bold text-xs">READY</Text>
-                                    ) : (
-                                        <Text className="text-yellow-500 font-bold text-xs">VOTING...</Text>
-                                    )}
+                                    <Text className={p.is_ready ? "text-green-400 font-bold text-xs" : "text-yellow-500 font-bold text-xs"}>{p.is_ready ? "READY" : "VOTING..."}</Text>
                                 </View>
                             ))}
                         </View>
                     </View>
                 ) : (
-                    <View className="flex-1 justify-center items-center">
-                        <View className="w-full aspect-[2/3] bg-black rounded-3xl overflow-hidden border-2 border-white/10 shadow-xl relative">
-                            {currentMovie.poster_path ? (
-                                <Image
-                                    source={{ uri: `https://image.tmdb.org/t/p/w780${currentMovie.poster_path}` }}
-                                    className="w-full h-full"
-                                    resizeMode="cover"
-                                />
-                            ) : (
-                                <View className="w-full h-full bg-gray-800 justify-center items-center">
-                                    <Text className="text-white">No Poster</Text>
-                                </View>
-                            )}
+                    <View className="flex-1 justify-center items-center relative mt-4 mb-20">
+                        <SwipeableMovieCard key={currentIndex} movie={currentMovie} onSwipe={handleSwipe} canLike={canLike} />
+                        
+                        <View className="flex-row justify-center items-center gap-24 w-full absolute -bottom-10">
                             
-                            {/* GRADIENT + TEXT */}
-                            <LinearGradient 
-                                colors={['transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.95)']} 
-                                className="absolute bottom-0 w-full h-64 justify-end p-6"
-                            >
-                                <Text className="text-white text-3xl font-black shadow-black drop-shadow-lg" numberOfLines={2}>
-                                    {currentMovie.title}
-                                </Text>
-                                
-                                <Text className="text-secondary font-bold mt-1 mb-2">
-                                    {currentMovie.release_date?.split('-')[0]} • ⭐ {currentMovie.vote_average.toFixed(1)}
-                                </Text>
-
-                                <Text 
-                                    className="text-gray-300 text-xs font-medium leading-5 opacity-90" 
-                                    numberOfLines={3} 
-                                >
-                                    {currentMovie.overview || "No description available."}
-                                </Text>
-                            </LinearGradient>
-                        </View>
-
-                        <View className="flex-row justify-center gap-8 mt-8 w-full">
                             <TouchableOpacity 
-                                onPress={() => handleSwipe(false)}
-                                className="bg-[#1E1E2D] p-5 rounded-full border-2 border-red-500/50 shadow-lg shadow-red-500/20 active:scale-95"
+                                onPress={() => handleSwipe(false)} 
+                                activeOpacity={0.7} 
+                                className="items-center justify-center p-4"
                             >
-                                <Image source={icons.close} className="w-8 h-8" tintColor="#EF4444" />
+                                <Image 
+                                    source={icons.close} 
+                                    className="w-14 h-14" 
+                                    tintColor="#EF4444" 
+                                    style={{ shadowColor: '#EF4444', shadowOffset: {width: 0, height: 0}, shadowOpacity: 0.4, shadowRadius: 8 }}
+                                />
                             </TouchableOpacity>
 
                             <TouchableOpacity 
-                                onPress={() => handleSwipe(true)}
-                                disabled={likesLeft <= 0}
-                                className={`p-5 rounded-full shadow-lg active:scale-95 scale-110 ${likesLeft <= 0 ? 'bg-gray-600 opacity-50' : 'bg-secondary shadow-orange-500/40'}`}
+                                onPress={() => canLike ? handleSwipe(true) : Alert.alert("No Picks Left", "You used all picks.")} 
+                                activeOpacity={0.7}
+                                disabled={!canLike}
+                                className={`items-center justify-center p-4 ${!canLike ? 'opacity-30' : ''}`}
                             >
-                                <Image source={icons.heart} className="w-10 h-10" tintColor="#fff" />
+                                <Image 
+                                    source={icons.heart} 
+                                    className="w-14 h-14" 
+                                    tintColor={!canLike ? "#6B7280" : "#22C55E"} 
+                                    style={canLike ? { shadowColor: '#22C55E', shadowOffset: {width: 0, height: 0}, shadowOpacity: 0.4, shadowRadius: 8 } : {}}
+                                />
                             </TouchableOpacity>
+
                         </View>
                     </View>
                 )}

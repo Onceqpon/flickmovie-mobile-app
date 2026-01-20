@@ -17,13 +17,14 @@ cssInterop(LinearGradient, {
 const EditProfile = () => {
   const { user, setUser } = useGlobalContext();
   
+  // --- LOGIKA AVATARA ---
   const rawAvatar = (user?.prefs as any)?.avatar;
-  const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
+  const initialAvatar = (rawAvatar && rawAvatar.length > 0)
+    ? rawAvatar
+    : `https://cloud.appwrite.io/v1/avatars/initials?name=${encodeURIComponent(user?.name || 'User')}&project=${process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID}`;
 
   const [username, setUsername] = useState(user?.name || '');
-  const [image, setImage] = useState<{ uri: string } | null>(
-    userAvatar ? { uri: userAvatar } : null
-  );
+  const [image, setImage] = useState<{ uri: string } | null>({ uri: initialAvatar });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pickImage = async () => {
@@ -49,9 +50,10 @@ const EditProfile = () => {
     setIsSubmitting(true);
 
     try {
-      let avatarUrl: string | null = userAvatar;
+      let avatarUrl: string | null = rawAvatar;
 
-      if (image && image.uri !== userAvatar && !image.uri.startsWith('http')) {
+      // Jeśli wybrano nowy obrazek z galerii (nie jest to stary URL ani Initials API)
+      if (image?.uri && image.uri !== rawAvatar && !image.uri.startsWith('http')) {
         const file = {
           uri: image.uri,
           name: `profile_${user.$id}.jpg`,
@@ -64,7 +66,8 @@ const EditProfile = () => {
             throw new Error("Failed to upload image");
         }
 
-        if (avatarUrl) {
+        // Usuń stary plik z Storage, jeśli to był plik Appwrite (nie inicjały)
+        if (avatarUrl && avatarUrl.includes('/files/')) {
             const fileIdMatch = avatarUrl.match(/files\/([^/]+)\//);
             if (fileIdMatch && fileIdMatch[1]) {
                 await deleteFile(fileIdMatch[1]);
@@ -72,7 +75,6 @@ const EditProfile = () => {
         }
 
         avatarUrl = uploadedUrl; 
-        
         await updateUserAvatar(avatarUrl);
       }
 
@@ -116,20 +118,11 @@ const EditProfile = () => {
         <View className="items-center mb-8">
           <TouchableOpacity onPress={pickImage}>
             <View className="w-24 h-24 rounded-full border-2 border-secondary justify-center items-center bg-black-100 mb-4 overflow-hidden">
-              {image?.uri ? (
                 <Image 
-                  source={{ uri: image.uri }} 
+                  source={{ uri: image?.uri }} 
                   className="w-full h-full" 
                   resizeMode="cover" 
                 />
-              ) : (
-                <Image 
-                  source={icons.user} 
-                  className="w-12 h-12" 
-                  resizeMode="contain" 
-                  style={{ tintColor: '#fff' }}
-                />
-              )}
             </View>
           </TouchableOpacity>
           <Text className="text-secondary font-semibold" onPress={pickImage}>

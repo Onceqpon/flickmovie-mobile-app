@@ -1,40 +1,33 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, Image, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-    Extrapolation,
-    interpolate,
-    runOnJS,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-} from "react-native-reanimated";
+import { ActivityIndicator, Dimensions, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import SwipeableMovieCard from "@/components/SwipeableMovieCard";
 import { icons } from "@/constants/icons";
 import { fetchMoviesForGame } from "@/services/tmdbapi";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const CARD_HEIGHT = SCREEN_HEIGHT * 0.75;
-const CARD_WIDTH = SCREEN_WIDTH * 0.95;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const CARD_HEIGHT = SCREEN_HEIGHT * 0.65;
+const CARD_WIDTH = SCREEN_WIDTH * 0.90;
 
 export default function GamePlay() {
   const router = useRouter();
   const params = useLocalSearchParams(); 
   
+  const rawGenres = params.genres as string;
+  const rawProviders = params.providers as string;
+  const rawType = params.type as string;
+  const rawMinYear = params.minYear as string;
+  const rawMaxYear = params.maxYear as string;
+  const rawMinRating = params.minRating as string;
+
   const [movies, setMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedMovies, setLikedMovies] = useState<any[]>([]);
-  
-  const [isDetailVisible, setIsDetailVisible] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const translateX = useSharedValue(0);
 
   const finishGame = (results: any[]) => {
     const minifiedResults = results.map(m => ({
@@ -55,14 +48,18 @@ export default function GamePlay() {
   useEffect(() => {
     const loadGameData = async () => {
       try {
-        const genres = params.genres ? JSON.parse(params.genres as string) : [];
-        const providers = params.providers ? JSON.parse(params.providers as string) : [];
-        const selectedType = params.type as 'movie' | 'tv' || 'movie';
-
+        setLoading(true);
+        const genres = rawGenres ? JSON.parse(rawGenres) : [];
+        const providers = rawProviders ? JSON.parse(rawProviders) : [];
+        const selectedType = (rawType as 'movie' | 'tv') || 'movie';
+        
         const data = await fetchMoviesForGame({
           genreIds: genres,
           providerIds: providers,
-          type: selectedType
+          type: selectedType,
+          minYear: rawMinYear,
+          maxYear: rawMaxYear,
+          minRating: rawMinRating
         });
         
         setMovies(data.slice(0, 15));
@@ -74,58 +71,34 @@ export default function GamePlay() {
     };
 
     loadGameData();
-  }, [params.genres, params.providers, params.type]);
+  }, [rawGenres, rawProviders, rawType, rawMinYear, rawMaxYear, rawMinRating]);
 
-  const nextCard = () => {
-    translateX.value = 0;
-    setCurrentIndex(prev => prev + 1);
-    setTimeout(() => setIsProcessing(false), 300);
-  };
-
-  const handleSwipeComplete = (direction: 'left' | 'right') => {
+  const handleSwipe = (liked: boolean) => {
     const currentMovie = movies[currentIndex];
-    let newLikedMovies = [...likedMovies];
-
-    if (direction === 'right') {
-      newLikedMovies.push(currentMovie);
+    
+    if (liked) {
+      const newLikedMovies = [...likedMovies, currentMovie];
       setLikedMovies(newLikedMovies);
-    }
-
-    if (currentIndex >= movies.length - 1) {
-      finishGame(newLikedMovies);
-    } else {
-      nextCard();
-    }
-  };
-
-  const cardGesture = Gesture.Pan()
-    .enabled(!isProcessing && !isDetailVisible) 
-    .onUpdate((event) => {
-      translateX.value = event.translationX;
-    })
-    .onEnd((event) => {
-      if (event.translationX > SWIPE_THRESHOLD || event.velocityX > 800) {
-        translateX.value = withSpring(SCREEN_WIDTH * 1.5);
-        runOnJS(handleSwipeComplete)('right');
-      } else if (event.translationX < -SWIPE_THRESHOLD || event.velocityX < -800) {
-        translateX.value = withSpring(-SCREEN_WIDTH * 1.5);
-        runOnJS(handleSwipeComplete)('left');
-      } else {
-        translateX.value = withSpring(0);
+      
+      if (currentIndex >= movies.length - 1) {
+        finishGame(newLikedMovies);
+        return;
       }
-    });
+    } else {
+        if (currentIndex >= movies.length - 1) {
+            finishGame(likedMovies);
+            return;
+        }
+    }
 
-  const cardStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { rotate: `${interpolate(translateX.value, [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2], [-10, 0, 10], Extrapolation.CLAMP)}deg` }
-    ]
-  }));
+    setCurrentIndex(prev => prev + 1);
+  };
 
   if (loading) {
     return (
       <View className="flex-1 bg-primary justify-center items-center">
         <ActivityIndicator size="large" color="#FF9C01" />
+        <Text className="text-white mt-4 font-bold">Finding best matches...</Text>
       </View>
     );
   }
@@ -151,18 +124,22 @@ export default function GamePlay() {
             className="absolute w-full h-full"
         />
 
-        <SafeAreaView className="flex-1 items-center justify-between py-2">
-            <View className="z-20 mt-2">
-                <Text className="text-gray-400 font-bold opacity-80">
-                {currentIndex + 1} / {movies.length}
-                </Text>
+        <SafeAreaView className="flex-1 flex-col">
+            
+            <View className="items-center mt-4">
+                <View className="bg-white/5 px-4 py-1 rounded-full border border-white/10">
+                    <Text className="text-gray-300 font-bold text-xs tracking-widest">
+                        {currentIndex + 1} / {movies.length}
+                    </Text>
+                </View>
             </View>
 
-            <View className="flex-1 items-center justify-center relative w-full my-4">
+            <View className="flex-1 items-center justify-center relative w-full">
+                
                 {nextMovie && (
                     <View 
                         className="absolute bg-black-200 rounded-3xl overflow-hidden opacity-40 border border-white/5"
-                        style={{ width: CARD_WIDTH, height: CARD_HEIGHT, transform: [{ scale: 0.95 }], top: 15 }}
+                        style={{ width: CARD_WIDTH, height: CARD_HEIGHT, transform: [{ scale: 0.95 }], top: 20 }}
                     >
                         <Image 
                             source={{ uri: `https://image.tmdb.org/t/p/w780${nextMovie.poster_path}` }} 
@@ -173,121 +150,41 @@ export default function GamePlay() {
                 )}
 
                 {activeMovie ? (
-                    <GestureDetector gesture={cardGesture}>
-                        <Animated.View 
-                            style={[cardStyle, { width: CARD_WIDTH, height: CARD_HEIGHT }]} 
-                            className="bg-black-200 rounded-3xl overflow-hidden shadow-2xl relative border border-white/10 z-10"
-                        >
-                            <Image 
-                                source={{ uri: `https://image.tmdb.org/t/p/w780${activeMovie.poster_path}` }}
-                                className="absolute w-full h-full"
-                                resizeMode="cover"
-                            />
-                            <LinearGradient
-                                colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.95)']}
-                                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' }}
-                            />
-                            
-                            <TouchableOpacity 
-                                activeOpacity={1}
-                                onPress={() => setIsDetailVisible(true)}
-                                className="absolute bottom-0 left-0 right-0 p-5 pb-8 flex-col justify-end h-[40%]"
-                            >
-                                <Text className="text-white text-4xl font-extrabold mb-2 shadow-black" numberOfLines={2}>
-                                    {activeMovie.title}
-                                </Text>
-                                <View className="flex-row items-center gap-3 mb-2">
-                                    <View className="flex-row items-center bg-secondary px-2 py-0.5 rounded-md">
-                                        <Image source={icons.star} className="w-4 h-4 mr-1" tintColor="white" />
-                                        <Text className="text-white font-bold text-base">
-                                            {activeMovie.vote_average.toFixed(1)}
-                                        </Text>
-                                    </View>
-                                    <Text className="text-gray-300 text-lg font-medium">
-                                        {activeMovie.release_date?.split('-')[0]}
-                                    </Text>
-                                    <Text className="text-gray-400 text-sm uppercase font-bold border border-gray-600 px-1 rounded">
-                                        {params.type === 'tv' ? 'TV SERIES' : 'MOVIE'}
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        </Animated.View>
-                    </GestureDetector>
+                    <SwipeableMovieCard
+                        key={currentIndex}
+                        movie={activeMovie}
+                        onSwipe={handleSwipe}
+                        canLike={true}
+                    />
                 ) : null}
             </View>
 
-            <View className="mb-8 z-20">
+            <View className="h-28 flex-row justify-center items-start gap-12 pt-1">
                 <TouchableOpacity 
-                    onPress={() => setIsDetailVisible(true)}
-                    activeOpacity={0.8}
-                    className="flex-row items-center bg-black-200/80 px-8 py-4 rounded-full border border-white/20 backdrop-blur-md shadow-lg"
+                    onPress={() => handleSwipe(false)} 
+                    activeOpacity={0.7} 
+                    className="items-center justify-center p-4 bg-black/20 rounded-full border border-white/5"
                 >
-                    <Text className="text-white font-bold text-lg mr-2">Check Details</Text>
-                    <Image source={icons.play} className="w-4 h-4 -rotate-90" tintColor="white" />
+                    <Image 
+                        source={icons.close} 
+                        className="w-10 h-10" 
+                        tintColor="#EF4444" 
+                    />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                    onPress={() => handleSwipe(true)} 
+                    activeOpacity={0.7}
+                    className="items-center justify-center p-4 bg-black/20 rounded-full border border-white/5"
+                >
+                    <Image 
+                        source={icons.heart} 
+                        className="w-10 h-10" 
+                        tintColor="#22C55E" 
+                    />
                 </TouchableOpacity>
             </View>
 
-            {activeMovie && (
-                <Modal
-                    visible={isDetailVisible}
-                    animationType="slide"
-                    transparent={false}
-                    onRequestClose={() => setIsDetailVisible(false)}
-                >
-                    <View className="flex-1 bg-primary">
-                        <LinearGradient
-                            colors={["#000C1C", "#161622", "#1E1E2D"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 0, y: 1 }}
-                            className="absolute w-full h-full"
-                        />
-                        <ScrollView contentContainerStyle={{ paddingBottom: 100 }} bounces={false}>
-                            <View className="w-full h-[65vh] relative">
-                                <Image 
-                                    source={{ uri: `https://image.tmdb.org/t/p/original${activeMovie.poster_path}` }}
-                                    className="w-full h-full"
-                                    resizeMode="cover"
-                                />
-                                <LinearGradient
-                                    colors={['transparent', '#000c1c']}
-                                    style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 100 }}
-                                />
-                                <TouchableOpacity 
-                                    onPress={() => setIsDetailVisible(false)}
-                                    className="absolute top-12 right-6 w-10 h-10 bg-black/50 rounded-full justify-center items-center"
-                                >
-                                    <Image source={icons.play} className="w-5 h-5 rotate-90" tintColor="white" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <View className="px-5 -mt-6">
-                                <Text className="text-white text-4xl font-extrabold mb-2">
-                                    {activeMovie.title}
-                                </Text>
-                                
-                                <View className="flex-row items-center gap-4 mb-6">
-                                    <View className="flex-row items-center border border-secondary px-3 py-1 rounded-full">
-                                        <Image source={icons.star} className="w-4 h-4 mr-1" tintColor="#FF9C01" />
-                                        <Text className="text-white font-bold">
-                                            {activeMovie.vote_average.toFixed(1)}
-                                        </Text>
-                                    </View>
-                                    <Text className="text-gray-400 text-lg">
-                                        {activeMovie.release_date?.split('-')[0]}
-                                    </Text>
-                                </View>
-
-                                <Text className="text-secondary text-lg font-bold mb-2 uppercase tracking-wider">
-                                    Overview
-                                </Text>
-                                <Text className="text-gray-300 text-lg leading-8">
-                                    {activeMovie.overview || "No description available for this title."}
-                                </Text>
-                            </View>
-                        </ScrollView>
-                    </View>
-                </Modal>
-            )}
         </SafeAreaView>
     </View>
   );

@@ -146,10 +146,11 @@ const SeriesSection = ({ title, sortBy }: SectionProps) => {
 
 const Index = () => {
   const router = useRouter();
-
   const { user } = useGlobalContext();
-  const rawAvatar = (user?.prefs as any)?.avatar; 
-  const userAvatar = typeof rawAvatar === 'string' ? rawAvatar : null;
+
+  const userAvatarUrl = (user?.prefs as any)?.avatar 
+    ? (user?.prefs as any).avatar 
+    : `https://cloud.appwrite.io/v1/avatars/initials?name=${encodeURIComponent(user?.name || 'User')}&project=${process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID}`;
 
   const {
     data: trendingMovies,
@@ -189,23 +190,14 @@ const Index = () => {
             </View>
             
             <TouchableOpacity 
-                className="w-10 h-10 bg-white/10 rounded-full justify-center items-center border border-white/20 overflow-hidden"
+                className="w-10 h-10 rounded-full border border-white/20 overflow-hidden bg-gray-800"
                 onPress={() => router.push('/profile')}
             >
-              {userAvatar ? (
                 <Image 
-                  source={{ uri: userAvatar }} 
+                  source={{ uri: userAvatarUrl }} 
                   className="w-full h-full" 
                   resizeMode="cover" 
                 />
-              ) : (
-                <Image 
-                  source={icons.user} 
-                  className="w-6 h-6" 
-                  resizeMode="contain" 
-                  tintColor="#fff"
-                  />
-              )}
             </TouchableOpacity>
           </View>
 
@@ -237,8 +229,8 @@ const Index = () => {
           )}
 
           {!trendingSeriesLoading && !trendingSeriesError && (trendingSeries?.length || 0) > 0 && (
-             <View className="mb-4">
-               <Text className="text-gray-400 text-sm font-pregular px-5 mb-3 mt-4 uppercase tracking-widest">
+              <View className="mb-4">
+                <Text className="text-gray-400 text-sm font-pregular px-5 mb-3 mt-4 uppercase tracking-widest">
                 Trending Series
               </Text>
               <FlatList

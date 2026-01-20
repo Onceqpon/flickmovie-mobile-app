@@ -3,7 +3,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { Platform } from "react-native";
+import { Keyboard, Platform } from "react-native"; // Dodano Keyboard
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   configureReanimatedLogger,
@@ -28,14 +28,24 @@ const MyDarkTheme = {
     border: '#232533',
   },
 };
- 
+
 export default function RootLayout() {
 
   useEffect(() => {
+    // Funkcja ukrywająca paski
     const hideSystemBars = async () => {
       if (Platform.OS === 'android') {
         try {
+          // 1. Ustawienie tła na przezroczyste (żeby nie było czarnego paska pod spodem)
+          await NavigationBar.setBackgroundColorAsync("transparent");
+          
+          // 2. Pozycjonowanie absolutne (treść wchodzi pod paski)
           await NavigationBar.setPositionAsync("absolute");
+          
+          // 3. Tryb "sticky immersive" - paski pojawiają się tylko przy swipe i same znikają
+          await NavigationBar.setBehaviorAsync('overlay-swipe');
+          
+          // 4. Fizyczne ukrycie
           await NavigationBar.setVisibilityAsync("hidden");
         } catch (e) {
           console.error("Error hiding system bars:", e);
@@ -43,7 +53,17 @@ export default function RootLayout() {
       }
     };
 
+    // Wywołanie przy starcie
     hideSystemBars();
+
+    // --- FIX NA KLAWIATURĘ ---
+    // Na Androidzie zamknięcie klawiatury często przywraca pasek nawigacji.
+    // To zdarzenie wymusza ponowne ukrycie paska, gdy klawiatura zniknie.
+    const keyboardListener = Keyboard.addListener('keyboardDidHide', hideSystemBars);
+
+    return () => {
+      keyboardListener.remove();
+    };
   }, []);
 
   return (
@@ -68,7 +88,13 @@ export default function RootLayout() {
           </Stack>
         </ThemeProvider>
         
-        <StatusBar hidden={true} style="light" backgroundColor="#000C1C" />
+        {/* StatusBar ustawiony na hidden, ale z przezroczystym tłem na wszelki wypadek */}
+        <StatusBar 
+            hidden={true} 
+            style="light" 
+            backgroundColor="transparent" 
+            translucent={true} 
+        />
       </GlobalProvider> 
     </GestureHandlerRootView>
   );

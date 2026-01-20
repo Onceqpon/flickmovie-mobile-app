@@ -2,8 +2,20 @@ import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { cssInterop } from "nativewind";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { icons } from "@/constants/icons";
@@ -14,15 +26,54 @@ import {
     getGame,
     getGameParticipants,
     joinGameByCode,
+    leaveGame,
+    resetParticipantsGenres,
     startGame,
     submitGenres,
     subscribeToGame,
     subscribeToParticipants,
-    updateGameSettings // <--- NOWY IMPORT
+    updateGameSettings
 } from "@/services/gameService";
 import { MOVIE_GENRES, TV_GENRES, WATCH_PROVIDERS } from "@/services/tmdbapi";
 
 cssInterop(LinearGradient, { className: "style" });
+
+const GenreItem = React.memo(({ item, isSelected, onPress }: { item: any, isSelected: boolean, onPress: () => void }) => (
+    <TouchableOpacity onPress={onPress} style={[styles.genreItem, isSelected ? styles.genreItemSelected : styles.genreItemUnselected]}>
+        <Text style={[styles.genreText, isSelected ? styles.genreTextSelected : styles.genreTextUnselected]}>{item.name}</Text>
+    </TouchableOpacity>
+));
+GenreItem.displayName = 'GenreItem';
+
+const ParticipantItem = React.memo(({ item, isHost, contentType }: { item: GameParticipant, isHost: boolean, contentType: 'movie' | 'tv' }) => {
+    const getGenreNames = () => {
+        try {
+            const selectedIds = JSON.parse(item.selected_genres || '[]');
+            if (selectedIds.length === 0) return "Picking...";
+            const genreList = contentType === 'tv' ? TV_GENRES : MOVIE_GENRES;
+            const names = genreList.filter(g => selectedIds.includes(g.id)).map(g => g.name);
+            if (names.length === 0) return "Picking...";
+            return names.join(", ");
+        } catch (e) { return "Picking..."; }
+    };
+    return (
+        <View style={styles.participantItem}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+                <View style={{ flex: 1, marginRight: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.nickname} numberOfLines={1}>{item.nickname}</Text>
+                        {isHost && <Text style={styles.hostBadge}>HOST</Text>}
+                    </View>
+                    <Text style={styles.genresText} numberOfLines={1} ellipsizeMode="tail">{getGenreNames()}</Text>
+                </View>
+            </View>
+            <View>{item.is_ready ? <View style={styles.statusReady}><Text style={styles.statusReadyText}>READY</Text></View> : <View style={styles.statusPicking}><Text style={styles.statusPickingText}>PICKING...</Text></View>}</View>
+        </View>
+    );
+});
+ParticipantItem.displayName = 'ParticipantItem';
+
 
 const MultiplayerLobby = () => {
   const { user } = useGlobalContext();
@@ -30,20 +81,18 @@ const MultiplayerLobby = () => {
   const { gameId, code } = useLocalSearchParams(); 
 
   const [game, setGame] = useState<GameState | null>(null);
+  const gameRef = useRef<GameState | null>(null); 
+
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // Modal Stan
   const [isGenreModalVisible, setGenreModalVisible] = useState(false);
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   
-  // --- NOWE STANY DLA EDYCJI USTAWIEŃ ---
   const [isSettingsModalVisible, setSettingsModalVisible] = useState(false);
   const [editContentType, setEditContentType] = useState<'movie' | 'tv'>('movie');
   const [editProviders, setEditProviders] = useState<number[]>([]);
-  const [editRounds, setEditRounds] = useState("5");
   const [editGenresCount, setEditGenresCount] = useState("2");
-  // --------------------------------------
 
   useEffect(() => {
     let unsubGame: any;
@@ -52,33 +101,61 @@ const MultiplayerLobby = () => {
     const init = async () => {
         try {
             if (gameId) {
-                // Host flow (lub powrót do lobby)
                 const g = await getGame(gameId as string);
                 setGame(g);
-                syncEditState(g); // Synchronizacja stanu edycji
+                gameRef.current = g;
+                syncEditState(g); 
+
                 const p = await getGameParticipants(gameId as string);
                 setParticipants(p as unknown as GameParticipant[]);
                 
                 unsubGame = subscribeToGame(gameId as string, (updatedGame) => {
+                    if (!updatedGame) {
+                        Alert.alert("Lobby Closed", "The host has left the lobby.");
+                        router.replace("/(tabs)" as any);
+                        return;
+                    }
+
+                    if (gameRef.current && gameRef.current.content_type !== updatedGame.content_type) {
+                        setSelectedGenres([]);
+                        Alert.alert("Mode Changed", `Host switched to ${updatedGame.content_type === 'movie' ? 'Movies' : 'TV Series'}. Please pick genres again.`);
+                    }
                     setGame(updatedGame);
-                    syncEditState(updatedGame); // Aktualizacja live u innych
-                    if (updatedGame.status === 'in_progress') {
+                    gameRef.current = updatedGame;
+                    syncEditState(updatedGame); 
+                    
+                    const imHost = updatedGame.host_id === user?.$id;
+                    if (updatedGame.status === 'in_progress' && !imHost) {
                         router.replace({ pathname: "/game/multiplayer/play" as any, params: { gameId: updatedGame.$id } });
                     }
                 });
+
                 unsubParticipants = subscribeToParticipants(gameId as string, (updatedList) => {
                     setParticipants(updatedList);
+
+                    if (gameRef.current) {
+                        const currentHostId = gameRef.current.host_id;
+                        const isHostPresent = updatedList.some(p => p.user_id === currentHostId);
+                        
+                        if (!isHostPresent && user?.$id !== currentHostId) {
+                            Alert.alert("Lobby Closed", "The host has disconnected.");
+                            router.replace("/(tabs)" as any);
+                        }
+                    }
                 });
+
             } else if (code && user) {
-                // Join flow
                 const g = await joinGameByCode(code as string, user.$id, user.name, (user.prefs as any).avatar);
-                setGame(g);
-                syncEditState(g);
-                router.setParams({ gameId: g.$id }); 
+                router.replace({ pathname: "/game/multiplayer/lobby", params: { gameId: g.$id } });
             }
         } catch (error: any) {
-            Alert.alert("Error", error.message);
-            router.replace("/(tabs)");
+            if (error.message.includes('404') || error.message.includes('not found')) {
+                Alert.alert("Lobby Closed", "The host has left the lobby.");
+                router.replace("/(tabs)" as any);
+            } else {
+                Alert.alert("Error", error.message);
+                router.replace("/(tabs)");
+            }
         }
     };
 
@@ -88,72 +165,69 @@ const MultiplayerLobby = () => {
         if (unsubGame) unsubGame();
         if (unsubParticipants) unsubParticipants();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId, code]);
 
-  // Synchronizuje lokalny stan edycji z aktualnym stanem gry
   const syncEditState = (g: GameState) => {
-      setEditContentType(g.content_type);
+      setEditContentType(g.content_type || 'movie');
       setEditProviders(JSON.parse(g.providers || '[]'));
-      setEditRounds(g.round_total.toString());
-      setEditGenresCount(g.genres_required_count.toString());
+      setEditGenresCount((g.genres_required_count || 2).toString());
   };
 
   const copyToClipboard = async () => {
-    if (game?.game_code) {
-        await Clipboard.setStringAsync(game.game_code);
-    }
+    if (game?.game_code) await Clipboard.setStringAsync(game.game_code);
   };
 
-  const toggleGenre = (id: number) => {
-      if (selectedGenres.includes(id)) {
-          setSelectedGenres(prev => prev.filter(g => g !== id));
-      } else {
-          if (selectedGenres.length >= (game?.genres_required_count || 2)) {
-             Alert.alert("Limit Reached", `You can only pick ${game?.genres_required_count} genres.`);
-             return;
+  const toggleGenre = useCallback((id: number) => {
+      setSelectedGenres(prev => {
+          if (prev.includes(id)) return prev.filter(g => g !== id);
+          else {
+              if (prev.length >= (game?.genres_required_count || 2)) {
+                 Alert.alert("Limit Reached", `You can only pick ${game?.genres_required_count} genres.`);
+                 return prev;
+              }
+              return [...prev, id];
           }
-          setSelectedGenres(prev => [...prev, id]);
-      }
-  };
+      });
+  }, [game]);
 
-  // --- LOGIKA EDYCJI USTAWIEŃ ---
   const toggleEditProvider = (id: number) => {
-      if (editProviders.includes(id)) {
-          setEditProviders(prev => prev.filter(p => p !== id));
-      } else {
-          setEditProviders(prev => [...prev, id]);
-      }
+      if (editProviders.includes(id)) setEditProviders(prev => prev.filter(p => p !== id));
+      else setEditProviders(prev => [...prev, id]);
   };
 
   const saveSettings = async () => {
       if (!game) return;
       setLoading(true);
       try {
+          if (game.content_type !== editContentType) {
+              await resetParticipantsGenres(game.$id);
+              setSelectedGenres([]); 
+          }
+
           await updateGameSettings(game.$id, {
               contentType: editContentType,
               providers: editProviders,
-              rounds: parseInt(editRounds) || 5,
               genresCount: parseInt(editGenresCount) || 2
           });
+          
           setSettingsModalVisible(false);
-          // Jeśli zmieniono typ (np. z TV na Movie), czyścimy wybrane gatunki gracza, bo mogą nie pasować
-          if (game.content_type !== editContentType) {
-              setSelectedGenres([]);
-          }
       } catch (error: any) {
           Alert.alert("Error", "Failed to update settings: " + error.message);
       } finally {
           setLoading(false);
       }
   };
-  // -----------------------------
 
   const handleStartGame = async () => {
       if (!game) return;
+      if (participants.length < 2) {
+          Alert.alert("Need more players", "You need at least 2 players to start a multiplayer game.");
+          return;
+      }
       setLoading(true);
       try {
           await startGame(game.$id);
+          router.replace({ pathname: "/game/multiplayer/play" as any, params: { gameId: game.$id } });
       } catch (error: any) {
           Alert.alert("Cannot Start", error.message);
           setLoading(false);
@@ -164,260 +238,155 @@ const MultiplayerLobby = () => {
       const myParticipant = participants.find(p => p.user_id === user?.$id);
       if (myParticipant) {
           try {
+              setGenreModalVisible(false); 
               await submitGenres(myParticipant.$id, selectedGenres);
-              setGenreModalVisible(false);
-              Alert.alert("Success", "Genres submitted! Waiting for others.");
           } catch (error: any) {
               Alert.alert("Error", error.message);
           }
       }
   };
 
-  if (!game) return <View className="flex-1 bg-[#1E1E2D] justify-center items-center"><ActivityIndicator color="#FF9C01" /></View>;
+  const handleLeaveLobby = async () => {
+      if (!game || !user) return;
+      const isHost = game.host_id === user.$id;
+      const myParticipant = participants.find(p => p.user_id === user.$id);
+
+      Alert.alert(
+          isHost ? "Delete Lobby?" : "Leave Lobby?",
+          isHost ? "If you leave, the lobby will be deleted for everyone." : "Are you sure you want to leave?",
+          [
+              { text: "Cancel", style: "cancel" },
+              { 
+                  text: isHost ? "Delete & Leave" : "Leave", 
+                  style: "destructive", 
+                  onPress: async () => {
+                      if (myParticipant) await leaveGame(game.$id, myParticipant.$id, isHost);
+                      router.replace("/(tabs)" as any);
+                  }
+              }
+          ]
+      );
+  };
+
+  const renderParticipantItem = useCallback(({ item }: { item: GameParticipant }) => {
+      return <ParticipantItem item={item} isHost={item.user_id === game?.host_id} contentType={game?.content_type || 'movie'} />;
+  }, [game?.host_id, game?.content_type]);
+
+  const renderGenreItem = useCallback(({ item }: { item: any }) => {
+      const isSelected = selectedGenres.includes(item.id);
+      return <GenreItem item={item} isSelected={isSelected} onPress={() => toggleGenre(item.id)} />;
+  }, [selectedGenres, toggleGenre]);
+
+
+  if (!game) return <View className="flex-1 bg-[#1E1E2D] justify-center items-center"><ActivityIndicator size="large" color="#FF9C01" /></View>;
 
   const isHost = game.host_id === user?.$id;
   const myParticipant = participants.find(p => p.user_id === user?.$id);
   const amIReady = myParticipant?.is_ready;
+  const hasMinPlayers = participants.length >= 2;
   const allReady = participants.length > 0 && participants.every(p => p.is_ready);
-
-  // Parsowanie dostawców do wyświetlenia
+  const canStart = allReady && hasMinPlayers;
   const activeProviderIds = JSON.parse(game.providers || '[]');
   const activeProvidersCount = activeProviderIds.length;
+  const genresData = (game.content_type || 'movie') === 'tv' ? TV_GENRES : MOVIE_GENRES;
 
   return (
     <View className="flex-1 bg-[#1E1E2D]">
       <LinearGradient colors={["#000C1C", "#1E1E2D"]} className="absolute w-full h-full" />
       <SafeAreaView className="flex-1 p-4">
         
-        {/* TOP BAR */}
         <View className="flex-row justify-between items-center mb-4">
-            <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
+            <TouchableOpacity onPress={handleLeaveLobby}>
                 <Image source={icons.left_arrow} className="w-5 h-5" tintColor="gray" />
             </TouchableOpacity>
-            
-            {/* PRZYCISK USTAWIEŃ (TYLKO DLA HOSTA) */}
             {isHost && (
-                <TouchableOpacity onPress={() => setSettingsModalVisible(true)} className="p-2 bg-white/10 rounded-full">
-                     {/* Użyj icons.settings jeśli masz, w przeciwnym razie np. icons.menu lub inny symbol */}
+                <TouchableOpacity onPress={() => setSettingsModalVisible(true)} style={styles.safeSettingsButton}>
                     <Image source={icons.menu} className="w-5 h-5" tintColor="white" /> 
                 </TouchableOpacity>
             )}
         </View>
 
-        {/* CODE SECTION */}
-        <TouchableOpacity 
-            onPress={copyToClipboard}
-            activeOpacity={0.7}
-            className="items-center mt-2 mb-6"
-        >
+        <TouchableOpacity onPress={copyToClipboard} activeOpacity={0.7} className="items-center mt-2 mb-6">
             <Text className="text-gray-400 uppercase tracking-widest text-xs mb-1">Room Code</Text>
             <View className="flex-row items-center justify-center gap-3">
-                <Text className="text-5xl font-black text-secondary tracking-widest">
-                    {game?.game_code || "..."}
-                </Text>
-                <View className="bg-white/10 p-2 rounded-full">
-                    <Image source={icons.copy} className="w-4 h-4" tintColor="#FF9C01" />
-                </View>
+                <Text className="text-5xl font-black text-secondary tracking-widest">{game?.game_code || "..."}</Text>
+                <View className="bg-white/10 p-2 rounded-full"><Image source={icons.copy} className="w-4 h-4" tintColor="#FF9C01" /></View>
             </View>
         </TouchableOpacity>
 
-        {/* --- SETTINGS SUMMARY CARD --- */}
         <View className="bg-white/5 border border-white/10 p-4 rounded-xl mb-6 flex-row justify-between items-center">
             <View>
                 <Text className="text-gray-400 text-xs uppercase font-bold mb-1">Game Mode</Text>
                 <View className="flex-row items-center gap-2">
-                    <Image 
-                        source={game.content_type === 'movie' ? icons.clapperboard : icons.screen} 
-                        className="w-4 h-4" 
-                        tintColor="#FF9C01" 
-                    />
-                    <Text className="text-white font-bold text-lg capitalize">
-                        {game.content_type === 'movie' ? "Movies" : "TV Series"}
-                    </Text>
+                    <Image source={game.content_type === 'movie' ? icons.clapperboard : icons.screen} className="w-4 h-4" tintColor="#FF9C01" />
+                    <Text className="text-white font-bold text-lg capitalize">{game.content_type === 'movie' ? "Movies" : "TV Series"}</Text>
                 </View>
             </View>
             <View className="items-end">
                 <Text className="text-gray-400 text-xs uppercase font-bold mb-1">Providers</Text>
-                <Text className="text-white font-bold text-lg">
-                    {activeProvidersCount === 0 ? "All" : `${activeProvidersCount} Selected`}
-                </Text>
+                <Text className="text-white font-bold text-lg">{activeProvidersCount === 0 ? "All" : `${activeProvidersCount} Selected`}</Text>
             </View>
         </View>
 
-        {/* ACTION BUTTON */}
         {!amIReady && (
-            <TouchableOpacity 
-                onPress={() => {
-                    // Reset wyboru jeśli zmieniono typ gry w międzyczasie
-                    setSelectedGenres([]); 
-                    setGenreModalVisible(true);
-                }}
-                className="w-full bg-secondary p-4 rounded-xl items-center shadow-lg shadow-orange-500/20 mb-6"
-            >
+            <TouchableOpacity onPress={() => { setSelectedGenres([]); setGenreModalVisible(true); }} className="w-full bg-secondary p-4 rounded-xl items-center shadow-lg shadow-orange-500/20 mb-6">
                 <Text className="text-primary font-black text-lg uppercase">Pick Genres</Text>
                 <Text className="text-primary/70 text-xs font-bold">Action Required</Text>
             </TouchableOpacity>
         )}
 
-        {/* PLAYERS LIST */}
         <Text className="text-white font-bold text-xl mb-4 ml-2">Players ({participants.length})</Text>
-        <FlatList
-            data={participants}
-            keyExtractor={item => item.$id}
-            renderItem={({ item }) => (
-                <View className="flex-row items-center justify-between mb-3 bg-white/5 p-3 rounded-xl border border-white/5">
-                    <View className="flex-row items-center">
-                        <Image source={{ uri: item.avatar_url }} className="w-10 h-10 rounded-full mr-3 bg-gray-600" />
-                        <View>
-                            <Text className="text-white font-bold text-lg">{item.nickname}</Text>
-                            {item.user_id === game.host_id && <Text className="text-secondary text-xs font-bold">HOST</Text>}
-                        </View>
-                    </View>
-                    <View>
-                        {item.is_ready ? (
-                            <View className="bg-green-500/20 px-3 py-1 rounded-full border border-green-500/50">
-                                <Text className="text-green-400 font-bold text-xs">READY</Text>
-                            </View>
-                        ) : (
-                            <View className="bg-yellow-500/20 px-3 py-1 rounded-full border border-yellow-500/50">
-                                <Text className="text-yellow-500 font-bold text-xs">PICKING...</Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-            )}
-        />
+        <FlatList data={participants} keyExtractor={item => item.$id} renderItem={renderParticipantItem} scrollEnabled={true} />
 
-        {/* START GAME BUTTON (HOST) */}
         {isHost && (
-            <TouchableOpacity 
-                onPress={handleStartGame}
-                disabled={loading} // Host może zacząć nawet jak nie wszyscy są gotowi (opcjonalnie)
-                className={`w-full p-4 rounded-xl items-center mt-4 ${allReady ? 'bg-green-500 shadow-green-500/20' : 'bg-gray-700'}`}
-            >
-                {loading ? <ActivityIndicator color="#fff" /> : (
-                    <Text className="text-white font-black text-lg uppercase">
-                        {allReady ? "Start Game" : "Waiting for players..."}
-                    </Text>
-                )}
+            <TouchableOpacity onPress={handleStartGame} disabled={loading || !canStart} style={[styles.safeStartButton, canStart ? styles.safeStartButtonActive : styles.safeStartButtonInactive]}>
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.safeStartButtonText}>{!hasMinPlayers ? "Need 2+ Players" : (allReady ? "Start Game" : "Waiting for picks...")}</Text>}
             </TouchableOpacity>
         )}
 
-        {/* --- MODAL WYBORU GATUNKÓW --- */}
         <Modal visible={isGenreModalVisible} animationType="slide" presentationStyle="pageSheet">
             <View className="flex-1 bg-[#1E1E2D] p-5">
                 <Text className="text-white text-2xl font-bold mb-2 mt-4">Select Genres</Text>
-                <Text className="text-gray-400 mb-6">
-                    Pick exactly <Text className="text-secondary font-bold">{game.genres_required_count}</Text> {game.content_type === 'tv' ? 'TV' : 'movie'} genres.
-                </Text>
-
-                <FlatList
-                    data={game.content_type === 'tv' ? TV_GENRES : MOVIE_GENRES} // Dynamiczna lista
-                    numColumns={2}
-                    columnWrapperStyle={{ justifyContent: 'space-between' }}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => {
-                        const isSelected = selectedGenres.includes(item.id);
-                        return (
-                            <TouchableOpacity
-                                onPress={() => toggleGenre(item.id)}
-                                className={`w-[48%] p-4 rounded-xl mb-3 border ${isSelected ? 'bg-secondary border-secondary' : 'bg-white/5 border-white/10'}`}
-                            >
-                                <Text className={`text-center font-bold ${isSelected ? 'text-primary' : 'text-gray-300'}`}>{item.name}</Text>
-                            </TouchableOpacity>
-                        );
-                    }}
-                />
-                
-                <TouchableOpacity 
-                    onPress={handleSubmitGenres}
-                    disabled={selectedGenres.length !== game.genres_required_count}
-                    className={`w-full p-4 rounded-xl items-center mt-4 mb-8 ${selectedGenres.length === game.genres_required_count ? 'bg-secondary' : 'bg-gray-700'}`}
-                >
-                    <Text className="text-primary font-black text-lg">Confirm Selection</Text>
-                </TouchableOpacity>
+                <Text className="text-gray-400 mb-6">Pick exactly <Text className="text-secondary font-bold">{game.genres_required_count}</Text> {game.content_type === 'tv' ? 'TV' : 'movie'} genres.</Text>
+                <FlatList data={genresData} numColumns={2} columnWrapperStyle={{ justifyContent: 'space-between' }} keyExtractor={(item) => item.id.toString()} renderItem={renderGenreItem} />
+                <TouchableOpacity onPress={handleSubmitGenres} disabled={selectedGenres.length !== game.genres_required_count} className={`w-full p-4 rounded-xl items-center mt-4 mb-8 ${selectedGenres.length === game.genres_required_count ? 'bg-secondary' : 'bg-gray-700'}`}><Text className="text-primary font-black text-lg">Confirm Selection</Text></TouchableOpacity>
             </View>
         </Modal>
 
-        {/* --- MODAL EDYCJI USTAWIEŃ (HOST ONLY) --- */}
         <Modal visible={isSettingsModalVisible} animationType="slide" presentationStyle="pageSheet">
             <View className="flex-1 bg-[#1E1E2D] p-5">
                 <View className="flex-row justify-between items-center mt-4 mb-6">
                     <Text className="text-white text-2xl font-bold">Lobby Settings</Text>
-                    <TouchableOpacity onPress={() => setSettingsModalVisible(false)}>
-                        <Text className="text-gray-400 font-bold">Cancel</Text>
-                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setSettingsModalVisible(false)}><Text className="text-gray-400 font-bold">Cancel</Text></TouchableOpacity>
                 </View>
-
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    {/* TYPE */}
                     <Text className="text-gray-400 font-bold mb-3 uppercase text-xs">Content Type</Text>
                     <View className="flex-row gap-4 mb-8">
-                        <TouchableOpacity 
-                            onPress={() => setEditContentType('movie')}
-                            className={`flex-1 p-4 rounded-xl border-2 items-center ${editContentType === 'movie' ? 'bg-secondary/20 border-secondary' : 'bg-black-100 border-gray-700'}`}
-                        >
-                            <Text className={`font-bold ${editContentType === 'movie' ? 'text-secondary' : 'text-gray-400'}`}>Movies</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                            onPress={() => setEditContentType('tv')}
-                            className={`flex-1 p-4 rounded-xl border-2 items-center ${editContentType === 'tv' ? 'bg-secondary/20 border-secondary' : 'bg-black-100 border-gray-700'}`}
-                        >
-                            <Text className={`font-bold ${editContentType === 'tv' ? 'text-secondary' : 'text-gray-400'}`}>TV Series</Text>
-                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setEditContentType('movie')} className={`flex-1 p-4 rounded-xl border-2 items-center ${editContentType === 'movie' ? 'bg-secondary/20 border-secondary' : 'bg-black-100 border-gray-700'}`}><Text className={`font-bold ${editContentType === 'movie' ? 'text-secondary' : 'text-gray-400'}`}>Movies</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => setEditContentType('tv')} className={`flex-1 p-4 rounded-xl border-2 items-center ${editContentType === 'tv' ? 'bg-secondary/20 border-secondary' : 'bg-black-100 border-gray-700'}`}><Text className={`font-bold ${editContentType === 'tv' ? 'text-secondary' : 'text-gray-400'}`}>TV Series</Text></TouchableOpacity>
                     </View>
-
-                    {/* NUMBERS */}
+                    
                     <Text className="text-gray-400 font-bold mb-3 uppercase text-xs">Game Config</Text>
                     <View className="flex-row gap-4 mb-8">
                         <View className="flex-1">
-                            <Text className="text-white mb-2">Rounds</Text>
-                            <TextInput 
-                                value={editRounds} 
-                                onChangeText={setEditRounds} 
-                                keyboardType="numeric"
-                                className="bg-black-100 text-white p-4 rounded-xl border border-gray-700 font-bold"
-                            />
-                        </View>
-                        <View className="flex-1">
                             <Text className="text-white mb-2">Genres / Player</Text>
-                            <TextInput 
-                                value={editGenresCount} 
-                                onChangeText={setEditGenresCount} 
-                                keyboardType="numeric"
-                                className="bg-black-100 text-white p-4 rounded-xl border border-gray-700 font-bold"
-                            />
+                            <TextInput value={editGenresCount} onChangeText={setEditGenresCount} keyboardType="numeric" className="bg-black-100 text-white p-4 rounded-xl border border-gray-700 font-bold" />
+                        </View>
+                        <View className="flex-1 justify-center">
+                             <Text className="text-gray-500 font-bold text-xs italic">Rounds are fixed to 4 in Funnel Mode.</Text>
                         </View>
                     </View>
 
-                    {/* PROVIDERS */}
                     <Text className="text-gray-400 font-bold mb-3 uppercase text-xs">Streaming Providers</Text>
                     <View className="flex-row flex-wrap gap-2 pb-10">
                         {Object.entries(WATCH_PROVIDERS).map(([key, value]) => {
                             const id = value as number; 
                             const isSelected = editProviders.includes(id);
-                            return (
-                                <TouchableOpacity
-                                    key={id}
-                                    onPress={() => toggleEditProvider(id)}
-                                    className={`px-4 py-3 rounded-lg border ${isSelected ? "bg-secondary border-secondary" : "bg-black-100 border-gray-700"}`}
-                                >
-                                    <Text className={`font-bold text-xs ${isSelected ? "text-primary" : "text-gray-300"}`}>
-                                        {key.replace("_", " ")}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
+                            return (<TouchableOpacity key={id} onPress={() => toggleEditProvider(id)} className={`px-4 py-3 rounded-lg border ${isSelected ? "bg-secondary border-secondary" : "bg-black-100 border-gray-700"}`}><Text className={`font-bold text-xs ${isSelected ? "text-primary" : "text-gray-300"}`}>{key.replace("_", " ")}</Text></TouchableOpacity>);
                         })}
                     </View>
                 </ScrollView>
-
-                <TouchableOpacity 
-                    onPress={saveSettings}
-                    disabled={loading}
-                    className="w-full bg-secondary p-4 rounded-xl items-center mb-8"
-                >
-                    {loading ? <ActivityIndicator color="#000" /> : <Text className="text-primary font-black text-lg">Save Changes</Text>}
-                </TouchableOpacity>
+                <TouchableOpacity onPress={saveSettings} disabled={loading} className="w-full bg-secondary p-4 rounded-xl items-center mb-8"><Text className="text-primary font-black text-lg">Save Changes</Text></TouchableOpacity>
             </View>
         </Modal>
 
@@ -425,5 +394,28 @@ const MultiplayerLobby = () => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+    genreItem: { width: '48%', padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 1 },
+    genreItemSelected: { backgroundColor: '#FF9C01', borderColor: '#FF9C01' },
+    genreItemUnselected: { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' },
+    genreText: { textAlign: 'center', fontWeight: 'bold' },
+    genreTextSelected: { color: '#161622' },
+    genreTextUnselected: { color: '#D1D5DB' },
+    participantItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)' },
+    avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12, backgroundColor: '#4B5563' },
+    nickname: { color: 'white', fontWeight: 'bold', fontSize: 18 },
+    hostBadge: { color: '#FF9C01', fontSize: 12, fontWeight: 'bold', marginLeft: 8 },
+    genresText: { color: '#9CA3AF', fontSize: 12, marginTop: 2 },
+    statusReady: { backgroundColor: 'rgba(74, 222, 128, 0.2)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(74, 222, 128, 0.5)' },
+    statusReadyText: { color: '#4ADE80', fontWeight: 'bold', fontSize: 12 },
+    statusPicking: { backgroundColor: 'rgba(234, 179, 8, 0.2)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.5)' },
+    statusPickingText: { color: '#EAB308', fontWeight: 'bold', fontSize: 12 },
+    safeSettingsButton: { padding: 8, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 9999 },
+    safeStartButton: { width: '100%', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 4.65, elevation: 8 },
+    safeStartButtonActive: { backgroundColor: '#22c55e' },
+    safeStartButtonInactive: { backgroundColor: '#374151' },
+    safeStartButtonText: { color: 'white', fontWeight: '900', fontSize: 18, textTransform: 'uppercase' }
+});
 
 export default MultiplayerLobby;

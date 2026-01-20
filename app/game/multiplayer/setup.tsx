@@ -28,12 +28,12 @@ const MultiplayerSetup = () => {
           user.name, 
           (user.prefs as any).avatar, 
           { 
-            rounds: parseInt(rounds), 
-            genresCount: parseInt(genresCount) 
+            genresCount: parseInt(genresCount) || 2,
+            contentType: 'movie',
+            providers: []
           }
       );
       
-      // POPRAWKA: Dodano 'as any'
       router.replace({ pathname: "/game/multiplayer/lobby" as any, params: { gameId: game.$id } });
     } catch (error: any) {
       Alert.alert("Error", error.message);

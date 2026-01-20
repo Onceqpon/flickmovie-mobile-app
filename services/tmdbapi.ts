@@ -259,11 +259,17 @@ export const TV_GENRES = [
 export const fetchMoviesForGame = async ({
   genreIds,
   providerIds,
-  type = 'movie' 
+  type = 'movie',
+  minYear,
+  maxYear,
+  minRating
 }: {
   genreIds: number[];
   providerIds: number[];
   type?: 'movie' | 'tv' | null;
+  minYear?: string;
+  maxYear?: string;
+  minRating?: string;
 }): Promise<any[]> => {
   const mediaType = type === 'tv' ? 'tv' : 'movie';
   
@@ -274,8 +280,21 @@ export const fetchMoviesForGame = async ({
   
   let baseEndpoint = `${TMDB_CONFIG.BASE_URL}/discover/${mediaType}?sort_by=popularity.desc&watch_region=PL&vote_count.gte=${voteCountLimit}`;
   
+  // URL Parametry (dla API)
   if (genresString) baseEndpoint += `&with_genres=${genresString}`;
   if (providersString) baseEndpoint += `&with_watch_providers=${providersString}`;
+
+  if (minYear) {
+      const param = mediaType === 'movie' ? 'primary_release_date.gte' : 'first_air_date.gte';
+      baseEndpoint += `&${param}=${minYear}-01-01`;
+  }
+  if (maxYear) {
+      const param = mediaType === 'movie' ? 'primary_release_date.lte' : 'first_air_date.lte';
+      baseEndpoint += `&${param}=${maxYear}-12-31`;
+  }
+  if (minRating && parseFloat(minRating) > 0) {
+      baseEndpoint += `&vote_average.gte=${minRating}`;
+  }
 
   try {
     const probeResponse = await fetch(`${baseEndpoint}&page=1`, {
@@ -305,8 +324,9 @@ export const fetchMoviesForGame = async ({
         results = randomPageData.results;
     }
     
+    // Normalizacja
     const normalizedResults = results
-      .filter((item: any) => item.poster_path)
+      .filter((item: any) => item.poster_path) 
       .map((item: any) => ({
           ...item,
           id: item.id,
@@ -315,7 +335,23 @@ export const fetchMoviesForGame = async ({
           media_type: mediaType 
       }));
 
-    return normalizedResults.sort(() => 0.5 - Math.random());
+    // --- KLUCZOWE: RĘCZNE FILTROWANIE "PO STRONIE KLIENTA" ---
+    // (Zabezpieczenie przed błędami API)
+    const strictlyFilteredResults = normalizedResults.filter((item: any) => {
+        const year = parseInt(item.release_date?.split('-')[0] || "0");
+        const rating = item.vote_average;
+
+        // Sprawdzamy rok
+        if (minYear && year < parseInt(minYear)) return false;
+        if (maxYear && year > parseInt(maxYear)) return false;
+        
+        // Sprawdzamy ocenę
+        if (minRating && rating < parseFloat(minRating)) return false;
+
+        return true;
+    });
+
+    return strictlyFilteredResults.sort(() => 0.5 - Math.random());
     
   } catch (error) {
     console.error("Error fetching game data:", error);

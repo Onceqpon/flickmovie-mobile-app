@@ -1,7 +1,6 @@
 import { Client, Databases, ID, Models, Permission, Query, RealtimeResponseEvent, Role } from "react-native-appwrite";
 import { fetchMoviesForGame } from "./tmdbapi";
 
-// --- KONFIGURACJA ---
 const ENDPOINT = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!;
 const PROJECT_ID = process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_FLICKMOVIEDATABASE_ID!;
@@ -12,8 +11,6 @@ const GAME_HISTORY_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_GAME_HISTORY
 const client = new Client().setEndpoint(ENDPOINT).setProject(PROJECT_ID);
 const database = new Databases(client);
 
-// --- TYPY DANYCH ---
-
 export interface GameState extends Models.Document {
   host_id: string;
   status: 'lobby' | 'genre_selection' | 'in_progress' | 'finished';
@@ -23,9 +20,8 @@ export interface GameState extends Models.Document {
   round_total: number;
   movies_pool: string; 
   merged_genres: string;
-  // NOWE POLA:
   content_type: 'movie' | 'tv';
-  providers: string; // JSON string
+  providers: string; 
 }
 
 export interface GameParticipant extends Models.Document {
@@ -34,21 +30,27 @@ export interface GameParticipant extends Models.Document {
   nickname: string;
   avatar_url?: string;
   is_ready: boolean;
-  selected_genres: string; // JSON string (Lista ID gatunków)
-  votes: string; // JSON string (Słownik: { "round_1": [123, 456], ... })
+  selected_genres: string; 
+  votes: string; 
 }
 
-// --- TWORZENIE I DOŁĄCZANIE (LOBBY) ---
+const shuffleArray = (array: any[]) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+};
 
 export const createGame = async (
     hostId: string, 
     hostName: string, 
     avatar: string, 
     config: { 
-        rounds: number; 
         genresCount: number;
-        contentType: 'movie' | 'tv'; // NOWE
-        providers: number[];         // NOWE
+        contentType: 'movie' | 'tv'; 
+        providers: number[];        
     }
 ) => {
   try {
@@ -64,10 +66,9 @@ export const createGame = async (
         game_code: gameCode,
         genres_required_count: config.genresCount,
         round_current: 1,
-        round_total: config.rounds,
+        round_total: 4, 
         movies_pool: '[]',
         merged_genres: '[]',
-        // ZAPISUJEMY WYBORY HOSTA
         content_type: config.contentType,
         providers: JSON.stringify(config.providers)
       },
@@ -110,7 +111,6 @@ export const joinGameByCode = async (code: string, userId: string, userName: str
 
     if (game.status !== 'lobby') throw new Error("Game already started");
 
-    // Sprawdź czy użytkownik już jest w grze
     const existing = await database.listDocuments(
       DATABASE_ID,
       GAME_PARTICIPANTS_COLLECTION_ID,
@@ -128,7 +128,6 @@ export const joinGameByCode = async (code: string, userId: string, userName: str
 };
 
 const joinGameAsParticipant = async (gameId: string, userId: string, name: string, avatar: string) => {
-  // ZABEZPIECZENIE: Generuj inicjały jeśli brak avatara (naprawia błędy source.uri)
   const safeAvatar = (avatar && avatar.length > 0) 
     ? avatar 
     : `https://cloud.appwrite.io/v1/avatars/initials?name=${encodeURIComponent(name)}&project=${PROJECT_ID}`;
@@ -147,20 +146,22 @@ const joinGameAsParticipant = async (gameId: string, userId: string, name: strin
       votes: '{}'
     },
     [
-        Permission.read(Role.any()),          // Wszyscy widzą gracza
-        Permission.update(Role.user(userId)), // Tylko gracz edytuje swoje dane (wybory)
-        Permission.delete(Role.user(userId))  // Gracz może wyjść
+        Permission.read(Role.any()),
+        Permission.update(Role.user(userId)),
+        Permission.delete(Role.user(userId))
     ]
   );
 };
 
-// --- REALTIME (NASŁUCHIWANIE) ---
-
-export const subscribeToGame = (gameId: string, callback: (game: GameState) => void) => {
+export const subscribeToGame = (gameId: string, callback: (game: GameState | null) => void) => {
   return client.subscribe(
     `databases.${DATABASE_ID}.collections.${ACTIVE_GAMES_COLLECTION_ID}.documents.${gameId}`,
     (response: RealtimeResponseEvent<GameState>) => {
-      callback(response.payload);
+      if (response.events.includes("databases.*.collections.*.documents.*.delete")) {
+          callback(null); 
+      } else {
+          callback(response.payload);
+      }
     }
   );
 };
@@ -170,7 +171,6 @@ export const subscribeToParticipants = (gameId: string, callback: (participants:
     `databases.${DATABASE_ID}.collections.${GAME_PARTICIPANTS_COLLECTION_ID}.documents`,
     async (response) => {
         const payload = response.payload as GameParticipant;
-        // Filtrujemy zdarzenia tylko dla aktualnej gry
         if (payload.game_id === gameId) {
             const list = await getGameParticipants(gameId);
             callback(list);
@@ -180,15 +180,17 @@ export const subscribeToParticipants = (gameId: string, callback: (participants:
 };
 
 export const getGameParticipants = async (gameId: string) => {
-  const result = await database.listDocuments<GameParticipant>(
-    DATABASE_ID,
-    GAME_PARTICIPANTS_COLLECTION_ID,
-    [Query.equal('game_id', gameId)]
-  );
-  return result.documents;
+  try {
+      const result = await database.listDocuments<GameParticipant>(
+        DATABASE_ID,
+        GAME_PARTICIPANTS_COLLECTION_ID,
+        [Query.equal('game_id', gameId)]
+      );
+      return result.documents;
+  } catch (error) {
+      return [];
+  }
 };
-
-// --- AKCJE GRACZA ---
 
 export const submitGenres = async (participantId: string, genres: number[]) => {
   await database.updateDocument(
@@ -219,10 +221,8 @@ export const submitRoundVotes = async (participantId: string, round: number, vot
     );
 };
 
-// --- LOGIKA HOSTA (SILNIK GRY) ---
-
 export const startGame = async (gameId: string) => {
-  const gameDoc = await getGame(gameId); // Pobieramy grę, żeby znać jej ustawienia
+  const gameDoc = await getGame(gameId); 
   const participants = await getGameParticipants(gameId);
   
   const allGenres = new Set<number>();
@@ -232,28 +232,25 @@ export const startGame = async (gameId: string) => {
   });
 
   const mergedGenres = Array.from(allGenres);
-  const providers = JSON.parse(gameDoc.providers || '[]'); // Pobieramy dostawców
+  const providers = JSON.parse(gameDoc.providers || '[]');
 
-  // Pobieramy z uwzględnieniem Typu i Dostawców
   const movies = await fetchMoviesForGame({
       genreIds: mergedGenres,
       providerIds: providers,
       type: gameDoc.content_type
   });
 
-  // --- ZABEZPIECZENIE (SAFEGUARD) ---
-  // Wymagamy DOKŁADNIE (lub więcej) 10 filmów na gracza.
-  // Jeśli jest mniej, gra się nie rozpoczyna.
-  const requiredCount = participants.length * 10;
+  const cardsPerPlayer = 10;
+  const requiredCount = participants.length * cardsPerPlayer;
 
   if (movies.length < requiredCount) {
       throw new Error(
-          `Not enough movies! Found ${movies.length}, but need ${requiredCount} (${participants.length} players × 10). Please add more Genres or Providers.`
+          `Not enough movies! Found ${movies.length}, but need ${requiredCount} (${participants.length} players × ${cardsPerPlayer} cards). Please add more Genres.`
       );
   }
 
-  // Bierzemy tylko tyle ile potrzeba
-  const pool = movies.slice(0, requiredCount);
+  const shuffledMovies = shuffleArray(movies);
+  const pool = shuffledMovies.slice(0, requiredCount);
 
   await database.updateDocument(
     DATABASE_ID,
@@ -263,7 +260,8 @@ export const startGame = async (gameId: string) => {
       status: 'in_progress',
       merged_genres: JSON.stringify(mergedGenres),
       movies_pool: JSON.stringify(pool),
-      round_current: 1
+      round_current: 1,
+      round_total: 4 
     }
   );
 
@@ -273,50 +271,51 @@ export const startGame = async (gameId: string) => {
   await Promise.all(promises);
 };
 
-export const nextRoundOrFinish = async (gameId: string, currentRound: number, maxRounds: number) => {
+export const nextRoundOrFinish = async (gameId: string, currentRound: number, totalRounds: number) => {
     const participants = await getGameParticipants(gameId);
+    const game = await getGame(gameId);
     
-    // 1. Zbieramy głosy z obecnej rundy
-    const roundVotes: number[][] = participants.map((p) => {
-        const votes = JSON.parse(p.votes || '{}');
-        return votes[`round_${currentRound}`] || [];
+    const currentPool = JSON.parse(game.movies_pool || '[]');
+
+    const votedMovieIds = new Set<string>();
+    
+    participants.forEach((p) => {
+        const votesMap = JSON.parse(p.votes || '{}');
+        const roundVotes = votesMap[`round_${currentRound}`] || []; 
+        
+        roundVotes.forEach((id: number | string) => {
+            votedMovieIds.add(String(id));
+        });
     });
-    
-    // 2. TWORZENIE NOWEJ PULI (SUMA POLUBIEŃ)
-    // Tworzymy zbiór wszystkich ID filmów, które dostały chociaż 1 like.
-    const allVotedIds = new Set(roundVotes.flat());
-    
-    const gameDoc = await database.getDocument<GameState>(DATABASE_ID, ACTIVE_GAMES_COLLECTION_ID, gameId);
-    const oldPool = JSON.parse(gameDoc.movies_pool);
 
-    // Nowa pula to filmy ze starej puli, które są na liście polubionych
-    const nextPool = oldPool.filter((m: any) => allVotedIds.has(m.id));
+    const nextRoundMovies = currentPool.filter((m: any) => votedMovieIds.has(String(m.id)));
 
-    // 3. SPRAWDZENIE CZY KONIEC
-    // Kończymy jeśli: osiągnięto limit rund LUB pula na następną rundę jest pusta (nikt nic nie polubił)
-    if (currentRound >= maxRounds || nextPool.length === 0) {
-        
-        // Jeśli nextPool jest pusty, to znaczy że w ostatniej rundzie nikt nic nie wybrał.
-        // Wtedy wynikiem jest pula z POPRZEDNIEJ rundy (oldPool).
-        // Jeśli nextPool ma filmy, to one są zwycięzcami.
-        const finalResults = nextPool.length > 0 ? nextPool : oldPool;
+    const finalNextPool = nextRoundMovies.length > 0 ? nextRoundMovies : currentPool;
 
-        await database.updateDocument(DATABASE_ID, ACTIVE_GAMES_COLLECTION_ID, gameId, {
-            status: 'finished',
-            movies_pool: JSON.stringify(finalResults) // Zapisujemy wyniki
-        });
+    if (currentRound >= 4) { 
+        await database.updateDocument(
+            DATABASE_ID,
+            ACTIVE_GAMES_COLLECTION_ID,
+            gameId,
+            { status: 'finished' }
+        );
     } else {
-        // 4. KOLEJNA RUNDA
-        await database.updateDocument(DATABASE_ID, ACTIVE_GAMES_COLLECTION_ID, gameId, {
-            round_current: currentRound + 1,
-            movies_pool: JSON.stringify(nextPool) // Zapisujemy nową, mniejszą pulę
-        });
-        
-        // Resetujemy graczy
+        const shuffledNextPool = shuffleArray(finalNextPool);
+
         const promises = participants.map((p) => 
             database.updateDocument(DATABASE_ID, GAME_PARTICIPANTS_COLLECTION_ID, p.$id, { is_ready: false })
         );
         await Promise.all(promises);
+
+        await database.updateDocument(
+            DATABASE_ID,
+            ACTIVE_GAMES_COLLECTION_ID,
+            gameId,
+            {
+                round_current: currentRound + 1,
+                movies_pool: JSON.stringify(shuffledNextPool) 
+            }
+        );
     }
 };
 
@@ -328,9 +327,8 @@ export const saveToHistory = async (userId: string, winners: any[], mode: 'multi
             ID.unique(),
             {
                 user_id: userId,
-                items: JSON.stringify(winners), // Zmiana na 'items' zgodnie z Twoim screenem
-                game_mode: mode,                // Twoje nowe pole
-                // $createdAt doda się samo automatycznie
+                items: JSON.stringify(winners),
+                game_mode: mode,
             },
             [
                 Permission.read(Role.user(userId)), 
@@ -346,7 +344,6 @@ export const saveToHistory = async (userId: string, winners: any[], mode: 'multi
 export const updateGameSettings = async (
     gameId: string, 
     config: { 
-        rounds: number; 
         genresCount: number;
         contentType: 'movie' | 'tv';
         providers: number[];
@@ -358,7 +355,6 @@ export const updateGameSettings = async (
       ACTIVE_GAMES_COLLECTION_ID,
       gameId,
       {
-        round_total: config.rounds,
         genres_required_count: config.genresCount,
         content_type: config.contentType,
         providers: JSON.stringify(config.providers)
@@ -367,4 +363,40 @@ export const updateGameSettings = async (
   } catch (error: any) {
     throw new Error(error.message || "Failed to update settings");
   }
+};
+
+export const resetParticipantsGenres = async (gameId: string) => {
+    const participants = await getGameParticipants(gameId);
+    
+    const promises = participants.map((p) => 
+        database.updateDocument(
+            DATABASE_ID, 
+            GAME_PARTICIPANTS_COLLECTION_ID, 
+            p.$id, 
+            { 
+                selected_genres: '[]', 
+                is_ready: false 
+            }
+        )
+    );
+    await Promise.all(promises);
+};
+
+export const leaveGame = async (gameId: string, participantId: string, isHost: boolean) => {
+    try {
+        if (isHost) {
+            const participants = await getGameParticipants(gameId);
+            
+            const deleteParticipantsPromises = participants.map(p => 
+                database.deleteDocument(DATABASE_ID, GAME_PARTICIPANTS_COLLECTION_ID, p.$id)
+            );
+            await Promise.all(deleteParticipantsPromises);
+
+            await database.deleteDocument(DATABASE_ID, ACTIVE_GAMES_COLLECTION_ID, gameId);
+        } else {
+            await database.deleteDocument(DATABASE_ID, GAME_PARTICIPANTS_COLLECTION_ID, participantId);
+        }
+    } catch (error) {
+        console.error("Error leaving game:", error);
+    }
 };
