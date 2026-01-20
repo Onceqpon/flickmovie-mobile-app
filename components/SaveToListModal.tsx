@@ -1,5 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, Modal, Text, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  SlideInDown,
+  SlideOutDown
+} from 'react-native-reanimated';
 
 import { icons } from '@/constants/icons';
 import { useGlobalContext } from '@/context/GlobalProvider';
@@ -15,30 +31,32 @@ interface SaveToListModalProps {
 const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListModalProps) => {
   const { user } = useGlobalContext();
   const [lists, setLists] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [processingListId, setProcessingListId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (visible && user) {
-      fetchLists();
-    }
-  }, [visible, user]);
-
-  const fetchLists = async () => {
+  const fetchLists = useCallback(async () => {
     if (!user?.$id) return;
     setLoading(true);
     try {
       const userLists = await getUserLists(user.$id);
       setLists(userLists);
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch lists');
+      console.error(error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.$id]);
+
+  useEffect(() => {
+    if (visible && user) {
+      fetchLists();
+    }
+  }, [visible, user, fetchLists]);
 
   const handleToggleList = async (listId: string, currentItems: string[]) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setProcessingListId(listId);
+    
     const itemString = `${mediaType}:${mediaId}`;
     const isOnList = currentItems.includes(itemString);
 
@@ -50,8 +68,7 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
       }
       await fetchLists();
     } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Problem occurred while updating list.');
+      Alert.alert('Error', 'An error occurred while updating the list.');
     } finally {
       setProcessingListId(null);
     }
@@ -65,45 +82,27 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
       <TouchableOpacity
         onPress={() => handleToggleList(item.$id, item.items)}
         disabled={processingListId === item.$id}
-        activeOpacity={0.7}
-        className={`p-4 rounded-2xl mb-3 flex-row justify-between items-center border-2 ${
+        activeOpacity={0.6}
+        className={`p-5 rounded-2xl mb-3 flex-row justify-between items-center border ${
           isOnList 
-            ? 'bg-black-100 border-secondary'
-            : 'bg-black-100 border-black-200' 
+            ? 'bg-secondary/10 border-secondary'
+            : 'bg-black-200/40 border-white/5' 
         }`}
       >
-        <View className="flex-1 pr-4">
-          <Text className={`font-psemibold text-lg ${isOnList ? 'text-secondary' : 'text-white'}`} numberOfLines={1}>
+        <View className="flex-1">
+          <Text className={`font-psemibold text-base ${isOnList ? 'text-secondary' : 'text-white'}`} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text className="text-gray-100 text-xs font-pregular mt-1">
+          <Text className="text-gray-100 text-xs mt-1">
             {item.items.length} {item.items.length === 1 ? 'item' : 'items'}
           </Text>
         </View>
 
         {processingListId === item.$id ? (
-          <ActivityIndicator color="#FF9C01" />
+          <ActivityIndicator size="small" color="#FF9C01" />
         ) : (
-          <View className={`w-8 h-8 rounded-full justify-center items-center ${
-            isOnList 
-              ? 'bg-secondary border border-secondary' 
-              : 'bg-transparent border-2 border-black-200'
-          }`}>
-              {isOnList ? (
-                <Image 
-                  source={icons.bookmark} 
-                  className="w-4 h-4" 
-                  resizeMode="contain" 
-                  tintColor="#161622" 
-                />
-              ) : (
-               <Image 
-                  source={icons.plus} 
-                  className="w-4 h-4" 
-                  resizeMode="contain" 
-                  tintColor="#CDCDE0" 
-               />
-             )}
+          <View className={`w-5 h-5 rounded-full border ${isOnList ? 'bg-secondary border-secondary' : 'border-white/20'}`}>
+            {isOnList && <Image source={icons.save} className="w-full h-full" tintColor="#161622" />}
           </View>
         )}
       </TouchableOpacity>
@@ -111,65 +110,60 @@ const SaveToListModal = ({ visible, onClose, mediaId, mediaType }: SaveToListMod
   };
 
   return (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View className="flex-1 justify-end bg-black/80">
-        <TouchableOpacity 
-           className="flex-1" 
-           onPress={onClose} 
-           activeOpacity={1} 
-        />
+    <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
+      <View className="flex-1 justify-end">
+        {/* Backdrop overlay */}
+        <Animated.View 
+          entering={FadeIn.duration(300)} 
+          exiting={FadeOut.duration(200)}
+          className="absolute inset-0 bg-black/60"
+        >
+          <TouchableOpacity className="flex-1" onPress={onClose} activeOpacity={1} />
+        </Animated.View>
         
-        <View className="bg-[#1E1E2D] h-[55%] rounded-t-[30px] p-6 border-t border-black-200 shadow-xl">
-          
-          <View className="flex-row justify-between items-center mb-6">
-            <View>
-              <Text className="text-white text-xl font-psemibold">Save to List</Text>
-              <Text className="text-gray-100 text-sm font-pregular mt-1">Select a collection</Text>
-            </View>
-            
-            <TouchableOpacity onPress={onClose} className="p-2 bg-black-100 rounded-full border border-black-200">
-               <Image 
-                 source={icons.close} 
-                 className="w-4 h-4" 
-                 resizeMode="contain" 
-                 tintColor="#CDCDE0" 
-               />
-            </TouchableOpacity>
+        {/* Bottom Sheet Content */}
+        <Animated.View 
+          entering={SlideInDown.duration(400)} 
+          exiting={SlideOutDown.duration(300)}
+          className="bg-[#161622] h-[55%] rounded-t-[32px] border-t border-white/10 overflow-hidden"
+        >
+          {/* Visual Handle Bar */}
+          <View className="w-full items-center py-4">
+            <View className="w-10 h-1 bg-white/10 rounded-full" />
           </View>
 
-          {loading ? (
-            <View className="flex-1 justify-center items-center">
-                <ActivityIndicator size="large" color="#FF9C01" />
+          <View className="px-6 flex-1">
+            <View className="flex-row justify-between items-start mb-6">
+              <View>
+                <Text className="text-white text-xl font-pbold">Save to List</Text>
+                <Text className="text-gray-100 text-xs font-pregular mt-1">Your Collections</Text>
+              </View>
+              <TouchableOpacity onPress={onClose} className="p-1">
+                <Image source={icons.close} className="w-5 h-5" tintColor="#666" />
+              </TouchableOpacity>
             </View>
-          ) : (
-            <FlatList
-              data={lists}
-              keyExtractor={(item) => item.$id}
-              contentContainerStyle={{ paddingBottom: 40 }}
-              showsVerticalScrollIndicator={false}
-              renderItem={renderItem}
-              ListEmptyComponent={() => (
-                <View className="items-center justify-center mt-10 px-4">
-                   <Image 
-                      source={icons.bookmark} 
-                      className="w-12 h-12 mb-4 opacity-50"
-                      resizeMode="contain"
-                      tintColor="#CDCDE0"
-                   />
-                   <Text className="text-gray-100 text-center font-pmedium text-lg">No lists</Text>
-                   <Text className="text-gray-100 text-center text-sm mt-2 font-pregular">
-                     Create your first list in your profile to save movies.
-                   </Text>
-                </View>
-              )}
-            />
-          )}
-        </View>
+
+            {loading ? (
+              <View className="flex-1 justify-center items-center">
+                <ActivityIndicator size="large" color="#FF9C01" />
+              </View>
+            ) : (
+              <FlatList
+                data={lists}
+                keyExtractor={(item) => item.$id}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                renderItem={renderItem}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={() => (
+                  <View className="items-center justify-center mt-10">
+                    <Text className="text-gray-100 font-pmedium">No lists found</Text>
+                    <Text className="text-gray-100/50 text-xs mt-1">Create a list in your profile first</Text>
+                  </View>
+                )}
+              />
+            )}
+          </View>
+        </Animated.View>
       </View>
     </Modal>
   );

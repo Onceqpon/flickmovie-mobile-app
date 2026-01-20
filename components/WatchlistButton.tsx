@@ -30,7 +30,6 @@ const WatchlistButton = ({ item, type }: WatchlistButtonProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Animacja skali przycisku
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -64,15 +63,13 @@ const WatchlistButton = ({ item, type }: WatchlistButtonProps) => {
       Alert.alert("Informacja", "Zaloguj się, aby zarządzać listą.");
       return;
     }
-
-    // Efekt haptyczny (delikatne uderzenie)
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Animacja "pop" - powiększenie i powrót
     scale.value = withSequence(withSpring(1.3), withSpring(1));
 
     const previousState = isSaved;
-    setIsSaved(!isSaved); // Optymistyczna aktualizacja UI
+    setIsSaved(!isSaved); 
 
     try {
       if (type === 'movie') {
@@ -120,7 +117,7 @@ const WatchlistButton = ({ item, type }: WatchlistButtonProps) => {
     >
       <Animated.View style={animatedStyle}>
         <Image
-          source={isSaved ? icons.save : icons.save} // Zakładając, że masz wersję wypełnioną
+          source={isSaved ? icons.save : icons.save}
           className="w-6 h-6"
           resizeMode="contain"
           tintColor={isSaved ? '#FF9C01' : '#FFFFFF'}
