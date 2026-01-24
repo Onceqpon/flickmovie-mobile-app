@@ -1,3 +1,10 @@
+import {
+  Movie,
+  ReviewDocument,
+  TrendingMovie,
+  TrendingSeries,
+  TVSeries,
+} from "interfaces/interfaces";
 import { Account, Client, Databases, ID, Query, Storage } from "react-native-appwrite";
 
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_FLICKMOVIEDATABASE_ID!; 
@@ -8,6 +15,7 @@ const WATCHLIST_SERIES_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WATCHLIS
 const REVIEWS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID!;
 const LISTS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_LISTS_COLLECTION_ID!;
 const GAME_HISTORY_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_GAME_HISTORY_COLLECTION_ID!;
+const REPORT_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_REPORT_COLLECTION_ID
 
 const STORAGE_ID = process.env.EXPO_PUBLIC_APPWRITE_STORAGE_ID!;
 const ENDPOINT = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!;
@@ -732,5 +740,28 @@ export const deleteGameHistoryEntry = async (documentId: string) => {
     return true;
   } catch (error: any) {
     throw new Error(error.message);
+  }
+  
+};
+
+export const createReport = async (userId: string, description: string) => {
+  try {
+    if (!REPORT_COLLECTION_ID) {
+      throw new Error("Report Collection ID is not defined");
+    }
+
+    const newReport = await database.createDocument(
+      DATABASE_ID,
+      REPORT_COLLECTION_ID,
+      ID.unique(),
+      {
+        user_id: userId,
+        description: description,
+      }
+    );
+    return newReport;
+  } catch (error: any) {
+    console.error("Error creating report:", error);
+    throw new Error(error.message || "Failed to send report");
   }
 };

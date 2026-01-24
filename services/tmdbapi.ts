@@ -1,3 +1,11 @@
+import {
+  Movie,
+  MovieDetails,
+  SeasonDetails,
+  TVSeries,
+  TVSeriesDetails
+} from "interfaces/interfaces";
+
 export const TMDB_CONFIG = {
   BASE_URL: "https://api.themoviedb.org/3",
   API_KEY: process.env.EXPO_PUBLIC_MOVIE_API_KEY,
@@ -77,8 +85,9 @@ export const fetchMovieDetails = async (
   }
 
   try {
+    // ZAKTUALIZOWANO: Dodano append_to_response
     const response = await fetch(
-      `${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}&language=en-US`, 
+      `${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}&language=en-US&append_to_response=watch/providers`, 
       {
         method: "GET",
         headers: TMDB_CONFIG.headers,
@@ -161,8 +170,9 @@ export const fetchTVSeriesDetails = async (
   seriesId: string
 ): Promise<TVSeriesDetails> => {
   try {
+    // ZAKTUALIZOWANO: Dodano language i append_to_response
     const response = await fetch(
-      `${TMDB_CONFIG.BASE_URL}/tv/${seriesId}?api_key=${TMDB_CONFIG.API_KEY}`,
+      `${TMDB_CONFIG.BASE_URL}/tv/${seriesId}?api_key=${TMDB_CONFIG.API_KEY}&language=en-US&append_to_response=watch/providers`,
       {
         method: "GET",
         headers: TMDB_CONFIG.headers,

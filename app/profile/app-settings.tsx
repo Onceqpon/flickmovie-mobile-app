@@ -6,9 +6,11 @@ import { Alert, Image, ScrollView, Switch, Text, TouchableOpacity, View } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { icons } from '@/constants/icons';
-// --- DODANO IMPORTY ---
 import { useGlobalContext } from '@/context/GlobalProvider';
-import { signOut } from '@/services/appwriteapi';
+// Dodaj import nowej funkcji API (upewnij się, że ją stworzyłeś w kroku 2)
+import { createReport, signOut } from '@/services/appwriteapi';
+// Dodaj import Modala (upewnij się, że plik istnieje)
+import ReportModal from '@/components/ReportModal';
 
 const SettingRow = ({ label, value, onValueChange }: { label: string, value: boolean, onValueChange: (val: boolean) => void }) => (
   <View className="flex-row items-center justify-between py-4 border-b border-white/5">
@@ -24,12 +26,14 @@ const SettingRow = ({ label, value, onValueChange }: { label: string, value: boo
 
 export default function AppSettings() {
   const router = useRouter();
-  // --- POBIERAMY FUNKCJE DO STANU GLOBALNEGO ---
-  const { setUser, setIsLogged } = useGlobalContext();
+  const { setUser, setIsLogged, user } = useGlobalContext(); // Pobieramy 'user' aby mieć ID
   
   const [notifications, setNotifications] = useState(true);
   const [sound, setSound] = useState(false);
   const [updates, setUpdates] = useState(true);
+  
+  // Stan dla modala zgłaszania problemu
+  const [reportModalVisible, setReportModalVisible] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -53,7 +57,6 @@ export default function AppSettings() {
       await AsyncStorage.setItem(key, JSON.stringify(value));
   };
 
-  // --- POPRAWIONA FUNKCJA CLEAR CACHE ---
   const handleClearCache = () => {
       Alert.alert(
           "Clear Cache?",
@@ -65,23 +68,14 @@ export default function AppSettings() {
                   style: "destructive", 
                   onPress: async () => {
                       try {
-                          // 1. Najpierw zabijamy sesję w Appwrite (Backend)
                           await signOut();
-
-                          // 2. Czyścimy ustawienia lokalne (AsyncStorage)
                           await AsyncStorage.clear(); 
-                          
-                          // 3. Czyścimy stan globalny w aplikacji (Context)
                           setUser(null);
                           setIsLogged(false);
-
                           Alert.alert("Success", "Cache cleared.");
-                          
-                          // 4. Przekierowujemy do logowania
                           router.replace('/(tabs)'); 
                       } catch (e) {
                           console.error(e);
-                          // Nawet jak backend rzuci błąd, czyścimy lokalnie i wyrzucamy
                           await AsyncStorage.clear();
                           setUser(null);
                           setIsLogged(false);
@@ -91,6 +85,13 @@ export default function AppSettings() {
               }
           ]
       );
+  };
+
+  // Obsługa wysłania zgłoszenia
+  const handleReportSubmit = async (description: string) => {
+    if (!user) return;
+    // Wywołanie funkcji API
+    await createReport(user.$id, description);
   };
 
   return (
@@ -125,8 +126,18 @@ export default function AppSettings() {
                 />
             </View>
 
+            {/* NOWA SEKCJA SUPPORT */}
+            <Text className="text-secondary font-bold uppercase tracking-widest mb-2 opacity-80">Support</Text>
+            <View className="bg-white/5 rounded-2xl px-4 mb-6">
+                <TouchableOpacity onPress={() => setReportModalVisible(true)} className="py-4 border-b border-white/5 flex-row justify-between items-center">
+                    <Text className="text-white text-lg">Report a Problem</Text>
+                    {/* Opcjonalnie: ikona ostrzeżenia lub strzałka */}
+                    <Image source={icons.copy} className="w-4 h-4 opacity-50" resizeMode="contain" tintColor="white" /> 
+                </TouchableOpacity>
+            </View>
+
             <Text className="text-secondary font-bold uppercase tracking-widest mb-2 opacity-80">Data</Text>
-            <View className="bg-white/5 rounded-2xl px-4">
+            <View className="bg-white/5 rounded-2xl px-4 mb-10">
                 <TouchableOpacity onPress={handleClearCache} className="py-4 border-b border-white/5">
                     <Text className="text-white text-lg">Clear Cache</Text>
                 </TouchableOpacity>
@@ -135,6 +146,14 @@ export default function AppSettings() {
                 </TouchableOpacity>
             </View>
         </ScrollView>
+
+        {/* Modal jest tutaj, poza ScrollView */}
+        <ReportModal 
+            visible={reportModalVisible} 
+            onClose={() => setReportModalVisible(false)} 
+            onSubmit={handleReportSubmit}
+        />
+
       </SafeAreaView>
     </View>
   );

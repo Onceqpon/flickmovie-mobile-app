@@ -1,3 +1,26 @@
+// --- SEKCJ VOD (NOWE) ---
+interface Provider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+  display_priority: number;
+}
+
+export interface WatchProvidersData {
+  link?: string;
+  flatrate?: Provider[]; // Abonament (np. Netflix)
+  rent?: Provider[];     // Wypożyczenie
+  buy?: Provider[];      // Kupno
+}
+
+// TEGO BRAKOWAŁO: Kontener na wyniki z różnych krajów
+export interface WatchProvidersResult {
+  results: {
+    [countryCode: string]: WatchProvidersData;
+  };
+}
+
+// --- FILMY ---
 interface BaseMovie {
   id: number;
   title: string;
@@ -51,8 +74,12 @@ interface MovieDetails extends BaseMovie {
   }[];
   status: string;
   tagline: string | null;
+
+  // Tutaj używasz WatchProvidersResult, więc musi być zdefiniowany wyżej
+  "watch/providers"?: WatchProvidersResult;
 }
 
+// --- SERIALE ---
 interface TVSeries {
   id: number;
   name: string;
@@ -110,8 +137,12 @@ interface TVSeriesDetails extends TVSeries {
     season_number: number;
     vote_average: number;
   }[];
+
+  // DODANO: Seriale też muszą mieć info gdzie obejrzeć
+  "watch/providers"?: WatchProvidersResult;
 }
 
+// --- POZOSTAŁE ---
 interface SeasonDetails {
   _id: string;
   air_date: string;

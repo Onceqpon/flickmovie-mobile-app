@@ -14,6 +14,7 @@ import {
 import Reviews from "@/components/Reviews";
 import SaveToListModal from "@/components/SaveToListModal";
 import WatchlistButton from "@/components/WatchlistButton";
+import WatchProviders from "@/components/WatchProviders";
 import { icons } from "@/constants/icons";
 import { useGlobalContext } from "@/context/GlobalProvider";
 import { fetchSeasonDetails, fetchTVSeriesDetails } from "@/services/tmdbapi";
@@ -57,6 +58,11 @@ const Details = () => {
     [seriesId],
     shouldFetch
   );
+
+  const getPolishProviders = () => {
+    if (!series || !series["watch/providers"] || !series["watch/providers"].results) return null;
+    return series["watch/providers"].results["PL"];
+  };
 
   const handleSeasonPress = async (seasonNumber: number, seasonId: number) => {
     if (!seriesId) return;
@@ -160,9 +166,9 @@ const Details = () => {
                  </View>
 
                  <TouchableOpacity 
-                    onPress={() => setModalVisible(true)}
-                    className="rounded-full w-14 h-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
-                    activeOpacity={0.8}
+                   onPress={() => setModalVisible(true)}
+                   className="rounded-full w-14 h-14 bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30"
+                   activeOpacity={0.8}
                  >
                     <Image 
                       source={icons.plus} 
@@ -202,6 +208,8 @@ const Details = () => {
               </View>
             ))}
           </View>
+
+          <WatchProviders providers={getPolishProviders()} />
 
           <Text className="text-white font-bold text-lg mb-2">Overview</Text>
           <Text className="text-gray-300 text-base leading-6 mb-6">

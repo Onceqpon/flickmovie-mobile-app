@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "FlickMovie",
-    "slug": "FlickMovie",
+    "slug": "flickmovie-mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

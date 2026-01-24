@@ -14,6 +14,7 @@ import {
 import Reviews from "@/components/Reviews";
 import SaveToListModal from "@/components/SaveToListModal";
 import WatchlistButton from "@/components/WatchlistButton";
+import WatchProviders from "@/components/WatchProviders";
 import { icons } from "@/constants/icons";
 import { useGlobalContext } from "@/context/GlobalProvider";
 import { fetchMovieDetails } from "@/services/tmdbapi";
@@ -66,6 +67,11 @@ const Details = () => {
     [movieId],
     shouldFetch
   );
+
+  const getPolishProviders = () => {
+    if (!movie || !movie["watch/providers"] || !movie["watch/providers"].results) return null;
+    return movie["watch/providers"].results["PL"];
+  };
 
   if (!movieId) return null;
 
@@ -187,7 +193,7 @@ const Details = () => {
           </View>
 
           <View className="flex-row flex-wrap gap-2 mb-6">
-            {movie.genres?.map((g) => (
+            {movie.genres?.map((g: any) => (
               <View
                 key={g.id}
                 className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10"
@@ -198,6 +204,8 @@ const Details = () => {
               </View>
             ))}
           </View>
+
+          <WatchProviders providers={getPolishProviders()} />
 
           <Text className="text-white font-bold text-lg mb-2">Overview</Text>
           <Text className="text-gray-300 text-base leading-6 mb-6">
