@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="https://via.placeholder.com/150/FF9C01/FFFFFF?text=FlickMovie" alt="FlickMovie Logo" width="150" height="150" style="border-radius: 20px" />
+  <img width="150" height="150" style="border-radius: 20px" alt="FlickMovie Logo" src="https://github.com/user-attachments/assets/1cf16398-c3e2-4f8f-8ec7-3322655107b1" />
 
   <h1>🎬 FlickMovie</h1>
   
@@ -92,22 +92,29 @@ Aplikacja została zbudowana z naciskiem na wydajność, płynne animacje i skal
 
 ---
 
-## 🏗️ Struktura Danych (Appwrite)
+## 🏗️ Struktura Bazy Danych (Appwrite)
 
-Główne kolekcje wykorzystywane w projekcie:
-* `active_games`: Przechowuje stan lobby, pulę filmów i obecną rundę.
-* `game_participants`: Gracze w danym lobby, ich statusy (ready) i głosy.
-* `watchlist_movies` / `series`: Osobiste listy użytkowników.
-* `reviews`: Oceny i opinie.
+Aplikacja opiera się na relacyjnej strukturze dokumentów w Appwrite. Poniżej znajduje się opis kluczowych kolekcji:
+
+| Kolekcja | ID Kolekcji | Opis i Kluczowe Pola |
+| :--- | :--- | :--- |
+| **Active Games** | `active_games` | Zarządza stanem gry w czasie rzeczywistym.<br>🔑 `game_code`, `host_id`, `status` (lobby/in_progress), `round_current`, `movies_pool` (JSON). |
+| **Game Participants** | `game_participants` | Gracze w aktywnym lobby.<br>🔑 `game_id`, `user_id`, `is_ready`, `votes` (JSON z głosami z rund), `selected_genres`. |
+| **Watchlist Movies** | `watchlist` | Filmy zapisane przez użytkownika.<br>🔑 `user_Id`, `movie_id`, `title`, `poster_path`. |
+| **Watchlist Series** | `watchlistseries` | Seriale zapisane przez użytkownika.<br>🔑 `user_id`, `series_id`, `name`, `first_air_date`. |
+| **Reviews** | `reviews` | Oceny i recenzje użytkowników.<br>🔑 `user_id`, `movie_id` / `series_id`, `rating` (1-5), `content`. |
+| **Game History** | `game_history` | Archiwum zakończonych rozgrywek.<br>🔑 `user_id`, `items` (JSON ze zwycięskimi filmami), `game_mode`. |
+| **Trending Searches** | `trending...` | Cache dla najczęściej wyszukiwanych fraz.<br>🔑 `movie_id` / `series_id`, `count` (licznik wyszukiwań). |
 
 ---
 
 ## 🏁 Uruchomienie (Getting Started)
 
-### Wymagania
-* Node.js (v18+)
-* Konto w [Appwrite Cloud](https://cloud.appwrite.io/) lub własna instancja.
-* Klucz API [TMDB](https://www.themoviedb.org/).
+### Wymagania wstępne
+* [Node.js](https://nodejs.org/) (wersja LTS)
+* Konto w [Appwrite Cloud](https://cloud.appwrite.io/) (lub lokalna instancja)
+* Klucz API z [TMDB](https://www.themoviedb.org/)
+* Aplikacja **Expo Go** na telefonie (Android/iOS)
 
 ### Instalacja
 
@@ -115,3 +122,42 @@ Główne kolekcje wykorzystywane w projekcie:
    ```bash
    git clone [https://github.com/twoja-nazwa/flickmovie.git](https://github.com/twoja-nazwa/flickmovie.git)
    cd flickmovie
+
+2. **Zainstaluj zależności**
+   ```bash
+   npm install
+   # lub
+   yarn install
+   
+4. **Skonfiguruj zmienne środowiskowe Utwórz plik .env w głównym katalogu:**
+   ```bash
+   # Konfiguracja Appwrite
+    EXPO_PUBLIC_APPWRITE_ENDPOINT=[https://cloud.appwrite.io/v1](https://cloud.appwrite.io/v1)
+    EXPO_PUBLIC_APPWRITE_PROJECT_ID=twoje_project_id
+    EXPO_PUBLIC_APPWRITE_FLICKMOVIEDATABASE_ID=twoje_database_id
+    EXPO_PUBLIC_APPWRITE_STORAGE_ID=twoje_bucket_id
+    
+    # API TMDB
+    EXPO_PUBLIC_TMDB_API_KEY=twoj_klucz_tmdb
+    
+    # ID Kolekcji (Skopiuj z Appwrite Database)
+    EXPO_PUBLIC_APPWRITE_ACTIVE_GAMES_COLLECTION_ID=...
+    EXPO_PUBLIC_APPWRITE_GAME_PARTICIPANTS_COLLECTION_ID=...
+    EXPO_PUBLIC_APPWRITE_WATCHLIST_COLLECTION_ID=...
+    EXPO_PUBLIC_APPWRITE_WATCHLIST_SERIES_COLLECTION_ID=...
+    EXPO_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID=...
+    EXPO_PUBLIC_APPWRITE_GAME_HISTORY_COLLECTION_ID=...
+    EXPO_PUBLIC_APPWRITE_LISTS_COLLECTION_ID=...
+    EXPO_PUBLIC_APPWRITE_REPORT_COLLECTION_ID=...
+    
+    # Kolekcje Trending (opcjonalne)
+    EXPO_PUBLIC_APPWRITE_COLLECTION_ID=... (Trending Movies)
+    EXPO_PUBLIC_APPWRITE_SERIES_COLLECTION_ID=... (Trending Series)
+   
+6. **Uruchom projekt**
+   ```bash
+   npx expo start
+
+## 📄 Licencja
+Projekt udostępniany na licencji MIT.
+<div align="center"> <br /> <sub>Stworzone przez Oncequpon</sub> </div>
