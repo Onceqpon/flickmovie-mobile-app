@@ -9,11 +9,11 @@
   </p>
 
   <p>
-    <a href="#funkcje">Funkcje</a> •
-    <a href="#technologie">Technologie</a> •
-    <a href="#galeria">Galeria</a> •
-    <a href="#uruchomienie">Jak zacząć</a> •
-    <a href="#licencja">Licencja</a>
+    <a href="#-o-projekcie">O projekcie</a> •
+    <a href="#-kluczowe-funkcje">Funkcje</a> •
+    <a href="#%EF%B8%8F-stos-technologiczny">Technologie</a> •
+    <a href="#%EF%B8%8F-struktura-bazy-danych-appwrite">Baza Danych</a> •
+    <a href="#-uruchomienie-getting-started">Jak zacząć</a>
   </p>
 
   <img src="https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square" alt="Build Status" />
