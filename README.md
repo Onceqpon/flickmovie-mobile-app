@@ -16,9 +16,7 @@
     <a href="#licencja">Licencja</a>
   </p>
 
-  <a href="https://github.com/twoja-nazwa/flickmovie/actions">
-    <img src="https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square" alt="Build Status" />
-  </a>
+  <img src="https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square" alt="Build Status" />
   <a href="https://reactnative.dev/">
     <img src="https://img.shields.io/badge/React_Native-v0.74+-blue?style=flat-square&logo=react" alt="React Native" />
   </a>
@@ -42,9 +40,15 @@ Dzięki integracji z **TMDB** oraz autorskiemu systemowi **Multiplayer**, aplika
 
 ## 📸 Galeria (Screenshots)
 
-| Ekran Główny | Tryb Multiplayer | Wyniki Głosowania | Szczegóły Filmu |
-|:---:|:---:|:---:|:---:|
-| <img src="https://via.placeholder.com/200x400?text=Home+Feed" width="200" /> | <img src="https://via.placeholder.com/200x400?text=Swipe+Card" width="200" /> | <img src="https://via.placeholder.com/200x400?text=Perfect+Match" width="200" /> | <img src="https://via.placeholder.com/200x400?text=Details" width="200" /> |
+| Ekran Główny | Tryb Multiplayer | Wyniki Głosowania |
+|:---:|:---:|:---:|
+| <img width="365" height="759" alt="main" src="https://github.com/user-attachments/assets/fb48746d-3b5f-4ecc-9934-399ffe780f7d" /> | <img width="365" height="759" alt="lobby" src="https://github.com/user-attachments/assets/a3652e00-a2a0-4f09-a23d-d8b3917e7dc3" /> | <img width="365" height="759" alt="wynik" src="https://github.com/user-attachments/assets/828ad569-62cf-4ed6-af9c-1199024b9bf1" /> |
+
+| Szczegóły Filmu |
+|:---:|
+| <img width="300" height="759" alt="detail" src="https://github.com/user-attachments/assets/1fcee1a5-b211-48a0-a231-a8c1b5e5e363" /> |
+
+
 
 ---
 
@@ -160,4 +164,4 @@ Aplikacja opiera się na relacyjnej strukturze dokumentów w Appwrite. Poniżej 
 
 ## 📄 Licencja
 Projekt udostępniany na licencji MIT.
-<div align="center"> <br /> <sub>Stworzone przez Oncequpon</sub> </div>
+<div align="center"> <br /> <sub>Stworzone przez Onceqpon</sub> </div>
